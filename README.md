@@ -73,3 +73,9 @@ id,module,stem,A,B,C,D,answer,explanation,source,year,exam,difficulty,material_i
 
 ## 数据存储
 内置默认题库写在 index.html 里；你对题库的修改（增删改）、错题本、统计数据保存在**当前浏览器的 localStorage** 中。清除浏览器数据、使用无痕模式或换浏览器/设备都会看不到原数据，**请定期在“题库”页导出 JSON 备份**。
+
+## 真题配图（img/zt）
+- 图形推理 / 图片选项 / 图表资料分析等依赖图片的真题，配图来自仓库 `真题/.../img/` 与 `真题/ocr/fig/`，已转为 JPEG（约 q70，宽≤900）放在 `img/zt/`。
+- 资料分析图表材料挂在共用 `material_id` 上，材料可为 `{text, image}`；练习页会同时显示材料图与题干图。
+- 答案与解析仅来自仓库 `tiku.json`，无答案的不收录。
+- 常识判断题型 taxonomy 含「时政」（供后续自编题）。
