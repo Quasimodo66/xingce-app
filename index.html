@@ -33,6 +33,13 @@ label{display:block;margin:6px 0}.opt{display:flex;align-items:flex-start;gap:12
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.exp{background:#fffbe6;border-left:4px solid #f1c40f;padding:8px;margin-top:8px;white-space:pre-wrap}
 .hide{display:none}.stem{white-space:pre-wrap;line-height:1.6}.tag.warn{background:#fdeede;color:#b35c00}.src{margin-top:6px}.mat{background:#eef6ff;border-left:4px solid #1e5bb8;padding:8px;white-space:pre-wrap;max-height:320px;overflow:auto;margin:6px 0;font-size:14px}.flt{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.flt input[type=number]{width:80px}
 .qimg{max-width:100%;height:auto;display:block;margin:8px 0;border:1px solid #ddd;border-radius:8px;background:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.chip{border:1px solid #9aa7b8;background:#fff;border-radius:999px;padding:5px 12px;font-size:13px;cursor:pointer;color:#333;line-height:1.2}.chip.on{background:#1e5bb8;color:#fff;border-color:#1e5bb8}.chip.mod{font-weight:600}
+.ann-bar{position:sticky;top:0;z-index:30;background:#fffc;backdrop-filter:blur(4px);border:1px solid #ddd;border-radius:8px;padding:6px 8px;margin:8px 0;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.ann-bar .sw{width:22px;height:22px;border-radius:50%;border:2px solid #ccc;padding:0;cursor:pointer}.ann-bar .sw.on{border-color:#111;box-shadow:0 0 0 2px #f1c40f}
+.qwrap{position:relative}.ann-cv{position:absolute;left:0;top:0;z-index:15;touch-action:none;cursor:crosshair;pointer-events:auto}
+.ann-hint{font-size:12px;color:#b35c00;background:#fdeede;padding:4px 8px;border-radius:4px;width:100%}
+button.b.onann{background:#b35c00}
+.cntbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin:8px 0}
 </style></head><body>
 <header><h1>行测刷题</h1><nav id="nav"></nav></header>
 <main id="app"></main>
@@ -99,6 +106,11 @@ const opts=(arr,all,cur)=>`<option value="">${all}</option>`+arr.map(v=>`<option
 // 通用筛选
 function qtOptions(mod,cur){const list=mod?qtypesOf(mod):[...new Set(Object.values(TAX).flatMap(a=>a.map(x=>x.qtype)))];return opts(list,"全部题型",cur)}
 function qstOptions(mod,qt,cur){const list=(mod&&qt)?qsubsOf(mod,qt):[];return list.length?opts(list,"全部子类",cur):`<option value="">全部子类</option>`}
+function typeChipsHTML(mods,selected){const set=new Set();(mods&&mods.length?mods:MODS).forEach(m=>qtypesOf(m).forEach(t=>set.add(t)));
+ const sel=new Set(selected||[]);return `<div class="chips" id="typeChips">`+[...set].map(t=>`<button type="button" class="chip ${sel.has(t)?"on":""}" data-qt="${esc(t)}">${esc(t)}</button>`).join("")+`</div>`}
+function modChipsHTML(cur){return `<div class="chips" id="modChips"><button type="button" class="chip mod ${!cur?"on":""}" data-m="">全部模块</button>`+MODS.map(m=>`<button type="button" class="chip mod ${cur===m?"on":""}" data-m="${esc(m)}">${esc(m)}</button>`).join("")+`</div>`}
+function subSelectHTML(mods,qts,cur){let list=[];if(qts&&qts.length===1){const t=qts[0];(mods&&mods.length?mods:MODS).forEach(m=>qsubsOf(m,t).forEach(s=>{if(!list.includes(s))list.push(s)}))}
+ return list.length?`<select id="subSel">${opts(list,"全部子类",cur||"")}</select>`:`<select id="subSel" class="hide"><option value="">全部子类</option></select>`}
 function fltHTML(p,f,withMod){return `<div class="flt">${withMod?`<select id="${p}m">${opts(MODS,"全部模块",f.m)}</select>`:""}
 <select id="${p}t">${opts(TYPES,"全部类型",f.t)}</select><select id="${p}e">${opts(uniq(q=>q.exam),"全部考试",f.e)}</select>
 <select id="${p}qt">${qtOptions(f.m,f.qt)}</select><select id="${p}qs">${qstOptions(f.m,f.qt,f.qs)}</select>
@@ -112,23 +124,45 @@ function match(q,f){if(f.m&&q.module!==f.m)return false;if(f.t&&q.type!==f.t)ret
  if(f.qs&&q.qsubtype!==f.qs)return false;
  if(f.d){if(f.d==="未标"?q.difficulty!==null:String(q.difficulty)!==f.d)return false}
  if(f.y1!==null&&f.y1!==undefined&&!(q.year>=f.y1))return false;if(f.y2!==null&&f.y2!==undefined&&!(q.year!==null&&q.year<=f.y2))return false;return true}
+function kwHit(q,kw){if(!kw)return true;const s=(q.id+" "+(q.stem||"")+" "+(q.source||"")+" "+(q.exam||"")+" "+(q.qtype||"")+" "+(q.qsubtype||"")+" "+Object.values(q.options||{}).join(" ")).toLowerCase();return s.includes(kw)}
+function filtered(f,kw){kw=(kw||"").trim().toLowerCase();return bank.filter(x=>match(x,f)&&kwHit(x,kw))}
 const tags=x=>`<span class="tag">${esc(x.module)}</span>${x.qtype?`<span class="tag">${esc(x.qtype)}${x.qsubtype?"/"+esc(x.qsubtype):""}</span>`:""}${x.exam?`<span class="tag">${esc(x.exam)}${x.year?" "+x.year:""}</span>`:""}${x.difficulty?`<span class="tag">难度${x.difficulty}</span>`:""}<span class="tag">${esc(x.id)}</span>`;
 const matVal=m=>!m?null:(typeof m==="string"?{text:m,image:null}:m);
 const matHTML=(q,open)=>{if(!q.material_id)return"";const m=matVal(mats[q.material_id]);const tx=m&&m.text||"";const im=m&&m.image;const body=(im?`<img class="qimg" src="${esc(im)}" alt="材料图片" loading="lazy">`:"")+(tx?esc(tx):(im?"":"（材料缺失）"));return `<details class="matbox" ${open?"open":""}><summary>【材料】${esc(q.material_id)}</summary><div class="mat">${body}</div></details>`};
 // ---- 题库
-let bf={m:"",t:"",e:"",qt:"",qs:"",d:"",y1:null,y2:null,q:"",lim:50};
-function vBank(){app.innerHTML=`<div class="card">${fltHTML("b",bf,1)}<div class="row" style="margin-top:6px"><input id="fq" placeholder="搜索关键词" value="${esc(bf.q)}"><button class="b" id="add">＋ 新增题目</button></div>
+let bf={m:"",t:"",e:"",qt:"",qs:"",qts:[],d:"",y1:null,y2:null,q:"",lim:50};
+function readBankExtra(){if(!$("#bt"))return;bf.t=$("#bt").value;bf.e=$("#be").value;bf.d=$("#bd").value;bf.y1=$("#by1").value===""?null:parseInt($("#by1").value);bf.y2=$("#by2").value===""?null:parseInt($("#by2").value);bf.qs=($("#subSel")&&$("#subSel").value)||"";bf.qt="";bf.qts=$$("#bQts .chip.on").map(x=>x.dataset.qt)}
+function vBank(){app.innerHTML=`<div class="card"><h3 style="margin:0 0 6px;font-size:16px">按题型检索（跨试卷）</h3>
+<p class="muted" style="margin:0 0 4px">先选模块与题型，考试/年份可选；真题·模拟·自编一并检索。</p>
+${modChipsHTML(bf.m)}
+<div class="muted">题型（可多选）</div><div id="bQts">${typeChipsHTML(bf.m?[bf.m]:null,bf.qts)}</div>
+<div class="row" id="bSubRow">${subSelectHTML(bf.m?[bf.m]:null,bf.qts,bf.qs)}</div>
+<div class="flt" style="margin-top:6px">
+<select id="bt">${opts(TYPES,"全部类型",bf.t)}</select>
+<select id="be">${opts(uniq(q=>q.exam),"全部考试",bf.e)}</select>
+年份 <input type="number" id="by1" placeholder="起" value="${bf.y1??""}"> – <input type="number" id="by2" placeholder="止" value="${bf.y2??""}">
+<select id="bd">${opts(["1","2","3","4","5","未标"],"全部难度",bf.d)}</select>
+</div>
+<div class="row" style="margin-top:6px"><input id="fq" placeholder="关键词（题干/选项/来源/ID）" value="${esc(bf.q)}" style="flex:1;min-width:160px"><button class="b" id="add">＋ 新增</button></div>
 <div class="row" style="margin-top:8px"><button class="b g" id="ej">导出 JSON</button><button class="b g" id="ec">导出 CSV</button><button class="b g" id="em">导出材料 CSV</button>
 <button class="b g" id="ij">导入 JSON/CSV</button><input type="file" id="file" accept=".json,.csv" class="hide">
-<label style="display:inline"><input type="checkbox" id="rep"> 替换整个题库（默认合并，同 id 覆盖）</label></div></div><div id="list"></div>`;
-wireFlt("b",bf,()=>{bf.lim=50;list()});
-let qt;$("#fq").oninput=e=>{bf.q=e.target.value;bf.lim=50;clearTimeout(qt);qt=setTimeout(list,250)};
+<label style="display:inline"><input type="checkbox" id="rep"> 替换整个题库</label></div></div>
+<div class="cntbar card" style="padding:10px 14px"><span class="muted" id="cnt"></span><button class="b ok" id="pracSel">用这些题练习</button></div>
+<div id="list"></div>`;
+function refreshBankChips(){$("#bQts").innerHTML=typeChipsHTML(bf.m?[bf.m]:null,bf.qts);wireTypeChips();$("#bSubRow").innerHTML=subSelectHTML(bf.m?[bf.m]:null,bf.qts,bf.qs);if($("#subSel"))$("#subSel").onchange=()=>{bf.lim=50;list()}}
+function wireTypeChips(){$$("#bQts .chip").forEach(c=>c.onclick=()=>{c.classList.toggle("on");bf.qts=$$("#bQts .chip.on").map(x=>x.dataset.qt);bf.qs="";bf.lim=50;refreshBankChips();list()})}
+$$("#modChips .chip").forEach(c=>c.onclick=()=>{bf.m=c.dataset.m||"";$$("#modChips .chip").forEach(x=>x.classList.toggle("on",x===c));bf.qts=[];bf.qs="";bf.lim=50;refreshBankChips();list()});
+wireTypeChips();["bt","be","bd","by1","by2"].forEach(id=>{const el=$("#"+id);if(el)el.onchange=()=>{bf.lim=50;list()}});
+if($("#subSel"))$("#subSel").onchange=()=>{bf.lim=50;list()};
+let qt;$("#fq").oninput=e=>{bf.q=e.target.value;bf.lim=50;clearTimeout(qt);qt=setTimeout(list,200)};
 $("#add").onclick=()=>form(null);$("#ej").onclick=()=>dl("xingce-bank.json",JSON.stringify({version:2,materials:mats,questions:bank},null,1),"application/json");
 $("#ec").onclick=()=>dl("xingce-bank.csv","\ufeff"+toCSV(bank),"text/csv");$("#em").onclick=()=>dl("xingce-materials.csv","\ufeff"+matCSV(),"text/csv");
-$("#ij").onclick=()=>$("#file").click();$("#file").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>doImport(f.name,r.result,$("#rep").checked);r.readAsText(f,"utf-8")};list()}
-function list(){const q=bf.q.trim().toLowerCase();const arr=bank.filter(x=>match(x,bf)&&(!q||JSON.stringify(x).toLowerCase().includes(q)));
-$("#list").innerHTML=`<p class="muted" id="cnt">共 ${arr.length} / ${bank.length} 题${arr.length>bf.lim?`（显示前 ${bf.lim} 题）`:""}</p>`+arr.slice(0,bf.lim).map(x=>`<div class="card">${tags(x)}
-<div class="muted src">${esc(x.source)}</div>${x.note?`<span class="tag warn">${esc(x.note)}</span>`:""}${matHTML(x)}<p class="stem">${esc(x.stem)}</p><div class="muted">${"ABCD".split("").map(k=>k+". "+esc(x.options[k])).join("<br>")}</div><p>答案：<b>${esc(x.answer)}</b></p>
+$("#ij").onclick=()=>$("#file").click();$("#file").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>doImport(f.name,r.result,$("#rep").checked);r.readAsText(f,"utf-8")};
+$("#pracSel").onclick=()=>{readBankExtra();const arr=filtered(bf,bf.q).filter(x=>!x.exclude_practice);if(!arr.length)return alert("没有符合条件的题目");start(arr.slice(0,Math.min(arr.length,50)),true,"题库筛选")};list()}
+function list(){readBankExtra();const arr=filtered(bf,bf.q);
+$("#cnt").textContent=`共 ${arr.length} / ${bank.length} 题`+(arr.length>bf.lim?`（显示前 ${bf.lim}）`:"");
+$("#list").innerHTML=arr.slice(0,bf.lim).map(x=>`<div class="card">${tags(x)}
+<div class="muted src">${esc(x.source)}</div>${x.note?`<span class="tag warn">${esc(x.note)}</span>`:""}${matHTML(x)}${x.image?`<img class="qimg" src="${esc(x.image)}" alt="题目图片" loading="lazy">`:""}<p class="stem">${esc(x.stem)}</p><div class="muted">${"ABCD".split("").map(k=>k+". "+esc(x.options[k])).join("<br>")}</div><p>答案：<b>${esc(x.answer)}</b></p>
 <details><summary>解析</summary><div class="exp">${esc(x.explanation)||"（无解析）"}</div></details><button class="b" data-e="${esc(x.id)}">编辑</button><button class="b r" data-d="${esc(x.id)}">删除</button></div>`).join("")+(arr.length>bf.lim?`<button class="b" id="more">加载更多</button>`:"");
 if($("#more"))$("#more").onclick=()=>{bf.lim+=50;list()};
 $$("[data-e]").forEach(b=>b.onclick=()=>form(bank.find(x=>x.id==b.dataset.e)));
@@ -182,36 +216,76 @@ alert(`导入成功 ${ok.length} 题${bad?`，跳过无效 ${bad} 行`:""}${miss
 // ---- 练习
 let pf={m:"",t:"",e:"",qt:"",qs:"",qts:[],d:"",y1:null,y2:null},S=null;
 function vPractice(){
-app.innerHTML=`<div class="card"><h3>开始练习</h3><div>${MODS.map(m=>`<label style="display:inline-block;margin-right:10px"><input type="checkbox" class="pm" value="${m}" checked> ${m}</label>`).join("")}</div>
-${fltHTML("p",pf,1)}
-<div class="flt" id="pqts"></div>
+app.innerHTML=`<div class="card"><h3>开始练习</h3>
+<p class="muted">默认不限试卷，按模块 / 题型挑题（真题·模拟·自编一起练）。</p>
+<div class="muted">模块</div><div class="chips" id="pMods">${MODS.map(m=>`<button type="button" class="chip mod on" data-m="${esc(m)}">${esc(m)}</button>`).join("")}</div>
+<div class="muted">题型（可多选，不选=该模块全部）</div><div id="pQts"></div>
+<div class="row" id="pSubRow"></div>
+<div class="flt" style="margin-top:6px">
+<select id="pt">${opts(TYPES,"全部类型",pf.t)}</select>
+<select id="pe">${opts(uniq(q=>q.exam),"全部考试",pf.e)}</select>
+年份 <input type="number" id="py1" placeholder="起" value="${pf.y1??""}"> – <input type="number" id="py2" placeholder="止" value="${pf.y2??""}">
+<select id="pd">${opts(["1","2","3","4","5","未标"],"全部难度",pf.d)}</select>
+</div>
 <p class="muted" id="pcnt"></p>
 <label>题量 <input id="pn" type="number" min="1" value="10" style="width:80px"></label><label>顺序 <select id="po"><option value="r">随机</option><option value="s">顺序</option></select></label>
 <label><input type="checkbox" id="ptimer" checked> 显示计时</label><button class="b" id="start">开始</button></div>`;
-function renderQts(){const mods=$$(".pm:checked").map(x=>x.value);const set=new Set();mods.forEach(m=>qtypesOf(m).forEach(t=>set.add(t)));
- const checked=new Set(pf.qts||$$(".pqtcb:checked").map(x=>x.value));
- $("#pqts").innerHTML=`<span class="muted">题型多选：</span>`+[...set].map(t=>`<label style="display:inline-block;margin-right:8px"><input type="checkbox" class="pqtcb" value="${esc(t)}" ${checked.has(t)?"checked":""}> ${esc(t)}</label>`).join("");
- $$(".pqtcb").forEach(c=>c.onchange=function(){pf.qts=$$(".pqtcb:checked").map(x=>x.value);updCount()})}
-function pool(){readFlt("p",pf);pf.qts=$$(".pqtcb:checked").map(x=>x.value);const ms=$$(".pm:checked").map(x=>x.value);return bank.filter(x=>!x.exclude_practice&&ms.includes(x.module)&&match(x,pf))}
-function updCount(){$("#pcnt").textContent=`符合条件 ${pool().length} 题`}
-function upd(){renderQts();updCount()}
-wireFlt("p",pf,upd);$$(".pm").forEach(el=>el.onchange=function(){pf.qts=[];upd()});upd();
+function pMods(){return $$("#pMods .chip.on").map(x=>x.dataset.m)}
+function renderQts(){const mods=pMods();const checked=new Set(pf.qts||[]);
+ $("#pQts").innerHTML=typeChipsHTML(mods, [...checked].filter(t=>mods.some(m=>qtypesOf(m).includes(t))));
+ $$("#pQts .chip").forEach(c=>c.onclick=()=>{c.classList.toggle("on");pf.qts=$$("#pQts .chip.on").map(x=>x.dataset.qt);pf.qs="";renderSub();updCount()});
+ renderSub()}
+function renderSub(){$("#pSubRow").innerHTML=subSelectHTML(pMods(),pf.qts,pf.qs);if($("#subSel"))$("#subSel").onchange=()=>{pf.qs=$("#subSel").value;updCount()}}
+function readP(){pf.t=$("#pt").value;pf.e=$("#pe").value;pf.d=$("#pd").value;pf.y1=$("#py1").value===""?null:parseInt($("#py1").value);pf.y2=$("#py2").value===""?null:parseInt($("#py2").value);pf.qs=($("#subSel")&&$("#subSel").value)||"";pf.qt="";pf.qts=$$("#pQts .chip.on").map(x=>x.dataset.qt);pf.m=""}
+function pool(){readP();const ms=pMods();const f=Object.assign({},pf,{m:""});return bank.filter(x=>!x.exclude_practice&&ms.includes(x.module)&&match(x,f))}
+function updCount(){$("#pcnt").textContent=`符合条件 ${pool().length} 题（跨全部试卷）`}
+$$("#pMods .chip").forEach(c=>c.onclick=()=>{c.classList.toggle("on");if(!pMods().length)c.classList.add("on");pf.qts=[];renderQts();updCount()});
+["pt","pe","pd","py1","py2"].forEach(id=>$("#"+id).onchange=updCount);
+renderQts();updCount();
 $("#start").onclick=function(){let qs=pool();if($("#po").value=="r")qs=shuffle(qs);qs=qs.slice(0,Math.max(1,+$("#pn").value||10));if(!qs.length)return alert("没有符合条件的题目");start(qs,$("#ptimer").checked,"练习")}
 }
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a}
 function start(qs,timer,title){S={qs,i:0,res:[],t0:Date.now(),timer,title};showQ()}
 function fmt(ms){const s=ms/1000|0;return String(s/60|0).padStart(2,"0")+":"+String(s%60).padStart(2,"0")}
 const sec=ms=>ms==null?"—":(ms/1000).toFixed(1)+" 秒";
-function showQ(){const q=S.qs[S.i];S.qt0=Date.now();app.innerHTML=`<div class="card"><div class="row" style="justify-content:space-between"><span>${S.title} 第 ${S.i+1} / ${S.qs.length} 题</span>
-${S.timer?`<span id="tm">⏱ ${fmt(Date.now()-S.t0)}</span>`:""}</div><div>${tags(q)}</div>${matHTML(q,1)}${q.image?`<img class="qimg" src="${esc(q.image)}" alt="题目图片" loading="lazy">`:""}<p class="qstem">${esc(q.stem||"")}</p>
-${"ABCD".split("").map(k=>`<button class="opt" data-k="${k}"><span class="ol">${k}</span><span class="ot">${esc(q.image&&q.options[k]===k?"":q.options[k])}</span><span class="oi"></span></button>`).join("")}<div id="fb"></div>
-<button class="b g" id="quit">结束练习</button></div>`;
+let Ann={on:false,mode:"pen",color:"#e74c3c",w:3,strokes:[],drawing:false};
+function clearAnn(){Ann.on=false;Ann.strokes=[];Ann.drawing=false;const cv=$("#ann-cv");if(cv)cv.remove();$$(".opt").forEach(b=>{b.style.pointerEvents="";});const h=$("#ann-hint");if(h)h.style.display="none";const t=$("#ann-tog");if(t){t.classList.remove("onann");t.textContent="标注"}}
+function redrawAnn(){const cv=$("#ann-cv");if(!cv)return;const ctx=cv.getContext("2d");const dpr=window.devicePixelRatio||1;ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,cv.width,cv.height);ctx.setTransform(dpr,0,0,dpr,0,0);
+ Ann.strokes.forEach(s=>{ctx.lineCap="round";ctx.lineJoin="round";ctx.lineWidth=s.w;ctx.globalCompositeOperation=s.erase?"destination-out":"source-over";ctx.strokeStyle=s.erase?"rgba(0,0,0,1)":s.color;ctx.beginPath();s.pts.forEach((p,i)=>{i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)});ctx.stroke()});ctx.globalCompositeOperation="source-over"}
+function fitAnn(){const wrap=$("#qwrap"),cv=$("#ann-cv");if(!wrap||!cv)return;const dpr=window.devicePixelRatio||1;const w=wrap.scrollWidth,h=Math.max(wrap.scrollHeight,wrap.clientHeight);cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);cv.style.width=w+"px";cv.style.height=h+"px";redrawAnn()}
+function annPos(ev,cv){const r=cv.getBoundingClientRect();const dpr=window.devicePixelRatio||1;return{x:(ev.clientX-r.left)*(cv.width/r.width)/dpr,y:(ev.clientY-r.top)*(cv.height/r.height)/dpr}}
+function enableAnn(){let cv=$("#ann-cv");const wrap=$("#qwrap");if(!wrap)return;if(!cv){cv=document.createElement("canvas");cv.id="ann-cv";cv.className="ann-cv";wrap.appendChild(cv)}
+ fitAnn();$$(".opt").forEach(b=>b.style.pointerEvents="none");const hint=$("#ann-hint");if(hint)hint.style.display="";
+ let cur=null;const down=ev=>{if(!Ann.on)return;ev.preventDefault();cv.setPointerCapture(ev.pointerId);Ann.drawing=true;cur={erase:Ann.mode==="erase",color:Ann.color,w:Ann.mode==="erase"?Math.max(12,Ann.w*4):Ann.w,pts:[annPos(ev,cv)]};Ann.strokes.push(cur);redrawAnn()};
+ const move=ev=>{if(!Ann.drawing||!cur)return;ev.preventDefault();cur.pts.push(annPos(ev,cv));redrawAnn()};
+ const up=ev=>{Ann.drawing=false;cur=null};
+ cv.onpointerdown=down;cv.onpointermove=move;cv.onpointerup=up;cv.onpointercancel=up;
+ if(window._annRO)window._annRO.disconnect();window._annRO=new ResizeObserver(()=>fitAnn());window._annRO.observe(wrap);
+ wrap.querySelectorAll("img").forEach(im=>{if(!im.complete)im.addEventListener("load",fitAnn,{once:true})})}
+function wireAnnBar(){const tog=$("#ann-tog");if(!tog)return;
+ tog.onclick=()=>{Ann.on=!Ann.on;if(Ann.on){tog.classList.add("onann");tog.textContent="标注中";enableAnn()}else{clearAnn();tog.textContent="标注"}};
+ $$(".sw").forEach(b=>b.onclick=()=>{Ann.color=b.dataset.c;Ann.mode="pen";$$(".sw").forEach(x=>x.classList.toggle("on",x===b));$("#ann-erase").classList.remove("onann")});
+ $("#ann-erase").onclick=()=>{Ann.mode=Ann.mode==="erase"?"pen":"erase";$("#ann-erase").classList.toggle("onann",Ann.mode==="erase")};
+ $("#ann-w").oninput=e=>{Ann.w=+e.target.value||3};
+ $("#ann-undo").onclick=()=>{Ann.strokes.pop();redrawAnn()}}
+function showQ(){clearAnn();const q=S.qs[S.i];S.qt0=Date.now();app.innerHTML=`<div class="card"><div class="row" style="justify-content:space-between"><span>${S.title} 第 ${S.i+1} / ${S.qs.length} 题</span>
+${S.timer?`<span id="tm">⏱ ${fmt(Date.now()-S.t0)}</span>`:""}</div>
+<div class="ann-bar"><button class="b" id="ann-tog" type="button">标注</button>
+<button class="sw on" type="button" data-c="#e74c3c" style="background:#e74c3c" title="红"></button>
+<button class="sw" type="button" data-c="#2980b9" style="background:#2980b9" title="蓝"></button>
+<button class="sw" type="button" data-c="#27ae60" style="background:#27ae60" title="绿"></button>
+<label class="muted">粗 <input id="ann-w" type="range" min="2" max="10" value="3" style="width:70px;vertical-align:middle"></label>
+<button class="b g" id="ann-erase" type="button">橡皮</button><button class="b g" id="ann-undo" type="button">撤销</button>
+<span class="ann-hint" id="ann-hint" style="display:none">标注开启中：请先点「标注」关闭后再点选项作答</span></div>
+<div class="qwrap" id="qwrap"><div>${tags(q)}</div>${matHTML(q,1)}${q.image?`<img class="qimg" src="${esc(q.image)}" alt="题目图片" loading="lazy">`:""}<p class="qstem">${esc(q.stem||"")}</p>
+${"ABCD".split("").map(k=>`<button class="opt" data-k="${k}"><span class="ol">${k}</span><span class="ot">${esc(q.image&&q.options[k]===k?"":q.options[k])}</span><span class="oi"></span></button>`).join("")}</div>
+<div id="fb"></div><button class="b g" id="quit">结束练习</button></div>`;
 if(S.timer&&!timerId)timerId=setInterval(()=>{const t=$("#tm");if(t)t.textContent="⏱ "+fmt(Date.now()-S.t0)},1000);
-$$(".opt").forEach(b=>b.onclick=()=>answer(b.dataset.k));$("#quit").onclick=summary}
+$$(".opt").forEach(b=>b.onclick=()=>{if(Ann.on)return;answer(b.dataset.k)});$("#quit").onclick=()=>{clearAnn();summary()};wireAnnBar()}
 function answer(k){const q=S.qs[S.i];if(S.res.length>S.i)return;const ms=Date.now()-S.qt0;const ok=k==q.answer;S.res.push({q,ok,ms});record(q,ok,ms);
 $$(".opt").forEach(b=>{b.disabled=true;if(b.dataset.k==q.answer)b.classList.add("right");else if(b.dataset.k==k)b.classList.add("wrong")});
 $("#fb").innerHTML=`<p style="font-weight:bold;font-size:18px;color:${ok?"#1e8e4a":"#c0392b"}">${ok?"✔ 回答正确":"✘ 回答错误，正确答案："+q.answer}　<span class="muted">本题用时 ${sec(ms)}</span></p><div class="exp">解析：${esc(q.explanation)||"（仓库未提供解析）"}</div><div class="muted src">${esc(q.source||"")}${q.note?" · ⚠ "+esc(q.note):""}</div>
-<button class="b" id="next">${S.i+1<S.qs.length?"下一题":"查看总结"}</button>`;$("#next").onclick=()=>{S.i++;S.i<S.qs.length?showQ():summary()};nav()}
+<button class="b" id="next">${S.i+1<S.qs.length?"下一题":"查看总结"}</button>`;$("#next").onclick=()=>{clearAnn();S.i++;S.i<S.qs.length?showQ():summary()};nav()}
 function bump(o,ok,ms){o.n++;if(ok)o.c++;o.tn=(o.tn||0)+1;o.t=(o.t||0)+ms}
 function record(q,ok,ms){if(!stats.st)stats.st={};bump(stats.mod[q.module]||(stats.mod[q.module]={n:0,c:0,tn:0,t:0}),ok,ms);const t=q.qtype||"未分类";bump(stats.qt[t]||(stats.qt[t]={n:0,c:0,tn:0,t:0}),ok,ms);if(q.qsubtype){const st=t+"/"+q.qsubtype;bump(stats.st[st]||(stats.st[st]={n:0,c:0,tn:0,t:0}),ok,ms)}sv(K.stats,stats);
 if(!ok){const w=wrong[q.id]||{count:0,streak:0};w.count++;w.streak=0;w.last=new Date().toISOString();wrong[q.id]=w}
@@ -252,7 +326,7 @@ material_id(资料分析共用材料 ID，可空), appearances(可选：同题�
 材料 CSV（单独文件）：material_id,text</div>
 <p>module 必须为：${MODS.join("、")}；answer 为 A/B/C/D；含逗号、引号或换行的字段用英文双引号包裹，内部引号写成 ""。year/difficulty/exam/qtype/material_id 可留空。导入带 material_id 的题目 CSV 时，请另外导入材料 CSV（表头 material_id,text）。</p>
 <button class="b r" id="rsd">恢复默认题库（内置 ${BASE.questions.length} 题）</button><button class="b r" id="rsb">恢复示例题库（覆盖当前题库）</button>
-<p class="muted">默认题库由 import_from_repo.py 从 xingce-prep 仓库导入：真题来自 真题/ocr/tiku.json（答案为机构整理/网友回忆，非官方），模拟题来自 练习/ 下的自编题。依赖图片的题未导入。题型部分来自仓库 subtype，其余按题干作答指令识别，可能有误，可在编辑中修改。</p></div>`;
+<p class="muted">默认题库由 import_from_repo.py 从 xingce-prep 仓库导入：真题来自 真题/ocr/tiku.json（答案为机构整理/网友回忆，非官方），模拟题来自 练习/ 下的自编题。题库支持跨试卷按模块/题型/子类筛选；练习页可开「标注」手写笔记（关掉即清空）。题型部分来自仓库 subtype，其余按题干识别，可在编辑中修改。</p></div>`;
 $("#rsd").onclick=()=>{if(confirm("恢复为内置默认题库？你对题库的修改会丢失（错题本和统计保留）。")){setMode("base");go("bank")}};
 $("#rsb").onclick=()=>{if(confirm("将用 10 道示例题替换当前题库（之后可点“恢复默认题库”恢复）？")){setMode("custom",bundle(clone(SEED)));go("bank")}}}
 go("bank");
