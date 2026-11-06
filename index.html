@@ -20,14 +20,14 @@ nav button.on{background:#fff;color:#1e5bb8}main{max-width:900px;margin:auto;pad
 button.b{background:#1e5bb8;color:#fff;border:0;border-radius:6px;padding:7px 12px;margin:3px;cursor:pointer;font-size:14px}
 button.g{background:#888}button.r{background:#c0392b}button.ok{background:#27ae60}
 input,select,textarea{font-size:15px;padding:6px;border:1px solid #ccc;border-radius:6px;max-width:100%}textarea{width:100%}
-label{display:block;margin:6px 0}.opt{display:flex;align-items:flex-start;gap:12px;width:100%;min-height:56px;text-align:left;background:#fff;border:2px solid #9aa7b8;border-radius:12px;padding:12px 14px;margin:8px 0;cursor:pointer;font-size:9px;line-height:1.45;color:#111;font-weight:700;word-break:break-word;overflow-wrap:anywhere;box-sizing:border-box}
+label{display:block;margin:6px 0}.opt{display:flex;align-items:flex-start;gap:12px;width:100%;min-height:44px;text-align:left;background:#fff;border:2px solid #9aa7b8;border-radius:12px;padding:12px 14px;margin:8px 0;cursor:pointer;font-size:9px;line-height:1.45;color:#111;font-weight:700;word-break:break-word;overflow-wrap:anywhere;box-sizing:border-box}
 .opt:hover:not(:disabled){border-color:#1e5bb8;background:#f3f7ff}.opt:disabled{cursor:default;opacity:1;color:#111}
-.opt .ol{flex:none;display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:#1e5bb8;color:#fff;font-weight:700;font-size:9px;margin-top:1px}
+.opt .ol{flex:none;display:inline;background:none;color:inherit;font-weight:700;font-size:inherit;width:auto;height:auto;border-radius:0;margin:0;padding:0 6px 0 0;line-height:inherit}
 .opt .ot{flex:1;min-width:0;font-weight:700}.opt .oi{flex:none;font-size:15px;font-weight:700;max-width:4.5em;line-height:1.2}
-.opt.right{background:#e3f8e8;border-color:#1e8e4a;border-width:3px}.opt.right .ol{background:#1e8e4a}.opt.right .oi::after{content:"✔ 正确";font-size:14px;color:#1e8e4a}
-.opt.wrong{background:#fde8e8;border-color:#c0392b;border-width:3px}.opt.wrong .ol{background:#c0392b}.opt.wrong .oi::after{content:"✘ 你的选择";font-size:14px;color:#c0392b}
+.opt.right{background:#e3f8e8;border-color:#1e8e4a;border-width:3px}.opt.right .ol{background:none;color:#1e8e4a}.opt.right .oi::after{content:"✔ 正确";font-size:14px;color:#1e8e4a}
+.opt.wrong{background:#fde8e8;border-color:#c0392b;border-width:3px}.opt.wrong .ol{background:none;color:#c0392b}.opt.wrong .oi::after{content:"✘ 你的选择";font-size:14px;color:#c0392b}
 .qstem{font-size:10px;line-height:1.7;white-space:pre-wrap;color:#111}
-@media(min-width:768px){.opt{font-size:10px;min-height:60px}.opt .ol{width:38px;height:38px;font-size:10px}.qstem{font-size:11px}}
+@media(min-width:768px){.opt{font-size:10px;min-height:48px}.opt .ol{width:auto;height:auto;font-size:inherit}.qstem{font-size:11px}}
 .tag{display:inline-block;background:#e8eefa;color:#1e5bb8;border-radius:4px;padding:1px 6px;font-size:12px;margin-right:4px}
 .muted{color:#777;font-size:13px}table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid #eee;padding:6px;text-align:left}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.exp{background:#fffbe6;border-left:4px solid #f1c40f;padding:8px;margin-top:8px;white-space:pre-wrap}
@@ -278,7 +278,7 @@ ${S.timer?`<span id="tm">⏱ ${fmt(Date.now()-S.t0)}</span>`:""}</div>
 <button class="b g" id="ann-erase" type="button">橡皮</button><button class="b g" id="ann-undo" type="button">撤销</button>
 <span class="ann-hint" id="ann-hint" style="display:none">标注开启中：请先点「标注」关闭后再点选项作答</span></div>
 <div class="qwrap" id="qwrap"><div>${tags(q)}</div>${matHTML(q,1)}${q.image?`<img class="qimg" src="${esc(q.image)}" alt="题目图片" loading="lazy">`:""}<p class="qstem">${esc(q.stem||"")}</p>
-${"ABCD".split("").map(k=>`<button class="opt" data-k="${k}"><span class="ol">${k}</span><span class="ot">${esc(q.image&&q.options[k]===k?"":q.options[k])}</span><span class="oi"></span></button>`).join("")}</div>
+${"ABCD".split("").map(k=>`<button class="opt" data-k="${k}"><span class="ol">${k}.</span><span class="ot">${esc(q.image&&q.options[k]===k?"":q.options[k])}</span><span class="oi"></span></button>`).join("")}</div>
 <div id="fb"></div><button class="b g" id="quit">结束练习</button></div>`;
 if(S.timer&&!timerId)timerId=setInterval(()=>{const t=$("#tm");if(t)t.textContent="⏱ "+fmt(Date.now()-S.t0)},1000);
 $$(".opt").forEach(b=>b.onclick=()=>{if(Ann.on)return;answer(b.dataset.k)});$("#quit").onclick=()=>{clearAnn();summary()};wireAnnBar()}
