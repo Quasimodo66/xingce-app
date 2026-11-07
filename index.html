@@ -282,7 +282,7 @@ if(S.timer&&!timerId)timerId=setInterval(()=>{const t=$("#tm");if(t)t.textConten
 $$(".opt").forEach(b=>b.onclick=()=>{if(Ann.on)return;answer(b.dataset.k)});$("#quit").onclick=()=>{clearAnn();summary()};wireAnnBar()}
 function answer(k){const q=S.qs[S.i];if(S.res.length>S.i)return;const ms=Date.now()-S.qt0;const ok=k==q.answer;S.res.push({q,ok,ms});record(q,ok,ms);done[q.id]=ok;sv(K.done,done);
 $$(".opt").forEach(b=>{b.disabled=true;if(b.dataset.k==q.answer)b.classList.add("right");else if(b.dataset.k==k)b.classList.add("wrong")});
-$("#fb").innerHTML=`<p style="font-weight:bold;font-size:18px;color:${ok?"#1e8e4a":"#c0392b"}">${ok?"✔ 回答正确":"✘ 回答错误，正确答案："+q.answer}　<span class="muted">本题用时 ${sec(ms)}</span></p><div class="exp">解析：${esc(q.explanation)||"（仓库未提供解析）"}</div><div class="muted src">${esc(q.source||"")}${q.note?" · ⚠ "+esc(q.note):""}</div>
+$("#fb").innerHTML=`<p style="font-weight:bold;font-size:18px;color:${ok?"#1e8e4a":"#c0392b"}">${ok?"✔ 回答正确":"✘ 回答错误，正确答案："+q.answer}　<span class="muted">本题用时 ${sec(ms)}</span></p><div class="exp">解析：${esc(reflow(q.explanation))||"（仓库未提供解析）"}</div><div class="muted src">${esc(q.source||"")}${q.note?" · ⚠ "+esc(q.note):""}</div>
 <button class="b" id="next">${S.i+1<S.qs.length?"下一题":"查看总结"}</button>`;$("#next").onclick=()=>{clearAnn();S.i++;S.i<S.qs.length?showQ():summary()};nav()}
 function bump(o,ok,ms){o.n++;if(ok)o.c++;o.tn=(o.tn||0)+1;o.t=(o.t||0)+ms}
 function record(q,ok,ms){if(!stats.st)stats.st={};bump(stats.mod[q.module]||(stats.mod[q.module]={n:0,c:0,tn:0,t:0}),ok,ms);const t=q.qtype||"未分类";bump(stats.qt[t]||(stats.qt[t]={n:0,c:0,tn:0,t:0}),ok,ms);if(q.qsubtype){const st=t+"/"+q.qsubtype;bump(stats.st[st]||(stats.st[st]={n:0,c:0,tn:0,t:0}),ok,ms)}sv(K.stats,stats);
@@ -290,6 +290,7 @@ if(!ok){const w=wrong[q.id]||{count:0,streak:0};w.count++;w.streak=0;w.last=new 
 else if(wrong[q.id]){wrong[q.id].streak=(wrong[q.id].streak||0)+1;if(wrong[q.id].streak>=2)delete wrong[q.id]}sv(K.wrong,wrong)}
 const pct=(c,n)=>n?(c/n*100).toFixed(1)+"%":"—";const avg=o=>o.tn?o.t/o.tn:null;
 function tbl(head,obj,keys){keys=keys||Object.keys(obj);return `<table><tr><th>${head}</th><th>作答</th><th>正确</th><th>正确率</th><th>平均用时</th></tr>${keys.filter(k=>obj[k]).map(k=>`<tr><td>${esc(k)}</td><td>${obj[k].n}</td><td>${obj[k].c}</td><td>${pct(obj[k].c,obj[k].n)}</td><td>${sec(avg(obj[k]))}</td></tr>`).join("")}</table>`}
+function reflow(s){if(!s)return s;const L=String(s).replace(/\r/g,"").split("\n").map(x=>x.trim());const W=Math.max(...L.map(x=>x.length));const M=/^(?:[A-DＡ-Ｄ]\s*[项選选]|[A-D][.．、:：]|[①-⑳]|\d{1,2}\s*[.、．)）](?!\d)|[（(]\d{1,2}[)）]|[一二三四五六七八九十]+[、.．]|【|故|因此|综上|所以|本题|答案|解析|第[一二三四五六七八九十\d]+[步题])/;let o="",p="";L.forEach(t=>{if(!t){if(o&&!o.endsWith("\n"))o+="\n";p="";return}if(!o||o.endsWith("\n"))o+=t;else if(M.test(t)||(/[。！？”"）)]$/.test(p)&&p.length<W*0.85))o+="\n"+t;else o+=t;p=t});return o}
 function el(){if(!S)return 0;let t=S.res.reduce((s,r)=>s+(r.ms||0),0);if(S.res.length<=S.i&&S.qt0)t+=Date.now()-S.qt0;return t}
 function summary(){if(timerId){clearInterval(timerId);timerId=null}const by={};S.res.forEach(r=>bump(by[r.q.module]||(by[r.q.module]={n:0,c:0,tn:0,t:0}),r.ok,r.ms));
 const c=S.res.filter(r=>r.ok).length;app.innerHTML=`<div class="card" id="summary"><h3>${S.title}总结</h3><p>作答 ${S.res.length} 题，正确 ${c} 题，正确率 <b>${pct(c,S.res.length)}</b>，用时 ${fmt(el())}</p>
@@ -299,7 +300,7 @@ const dt=s=>{const d=new Date(s);return isNaN(d)?String(s||""):d.toLocaleString(
 function vWrong(){const ids=Object.keys(wrong).filter(id=>bank.some(x=>x.id==id));
 app.innerHTML=`<div class="card"><p>共 ${ids.length} 道错题。连续答对 2 次自动移出。</p><button class="b" id="redo" ${ids.length?"":"disabled"}>重做错题</button><button class="b r" id="clr">清空错题本</button><button class="b g" id="wfexp">导出错题+收藏</button></div>`+ids.map(id=>{const q=bank.find(x=>x.id==id),w=wrong[id];return `<div class="card wq">${tags(q)}
 <div class="muted">${esc(q.source||"")}<br>错 ${w.count} 次 · 最近错误：${esc(dt(w.last))} · 连对 ${w.streak||0}</div>${matHTML(q)}${q.image?`<img class="qimg" src="${esc(q.image)}" alt="题目图片" loading="lazy">`:""}<p class="stem">${esc(q.stem||"")}</p><p>答案：<b>${q.answer}</b>. ${esc(q.options[q.answer])}</p>
-<details><summary>解析</summary><div class="exp">${esc(q.explanation)}</div></details><button class="b ok" data-m="${esc(id)}">已掌握</button></div>`}).join("");
+<details><summary>解析</summary><div class="exp">${esc(reflow(q.explanation))}</div></details><button class="b ok" data-m="${esc(id)}">已掌握</button></div>`}).join("");
 $("#wfexp").onclick=exportWF;$("#redo").onclick=()=>start(shuffle(ids.map(id=>bank.find(x=>x.id==id))),true,"错题重做");
 $("#clr").onclick=()=>{if(confirm("确定清空错题本？")){wrong={};sv(K.wrong,wrong);go("wrong")}};
 $$("[data-m]").forEach(b=>b.onclick=()=>{delete wrong[b.dataset.m];sv(K.wrong,wrong);go("wrong")})}
@@ -312,7 +313,7 @@ dl(`xingce-错题收藏-${ts}.json`,JSON.stringify({kind:"xingce-wrong-fav",vers
 function vFav(){const ids=Object.keys(fav).filter(id=>bank.some(x=>x.id==id)).sort((a,b)=>(fav[b]||"").localeCompare(fav[a]||""));
 app.innerHTML=`<div class="card"><p>共 ${ids.length} 道收藏题。</p><button class="b" id="favredo" ${ids.length?"":"disabled"}>练习收藏题</button><button class="b r" id="favclr" ${ids.length?"":"disabled"}>清空收藏</button><button class="b g" id="wfexp">导出错题+收藏</button></div>`+ids.map(id=>{const q=bank.find(x=>x.id==id);return `<div class="card wq">${tags(q)}
 <div class="muted">${esc(q.source||"")}<br>收藏于：${esc(dt(fav[id]))}</div>${matHTML(q)}${q.image?`<img class="qimg" src="${esc(q.image)}" alt="题目图片" loading="lazy">`:""}<p class="stem">${esc(q.stem||"")}</p>${"ABCD".split("").map(k=>`<div>${k}. ${esc(q.image&&q.options[k]===k?"":q.options[k]||"")}</div>`).join("")}
-<details><summary>答案与解析</summary><p>答案：<b>${q.answer}</b></p><div class="exp">${esc(q.explanation||"")}</div></details><button class="b r" data-unfav="${esc(id)}">取消收藏</button></div>`}).join("");
+<details><summary>答案与解析</summary><p>答案：<b>${q.answer}</b></p><div class="exp">${esc(reflow(q.explanation||""))}</div></details><button class="b r" data-unfav="${esc(id)}">取消收藏</button></div>`}).join("");
 $("#wfexp").onclick=exportWF;$("#favredo").onclick=()=>start(shuffle(ids.map(id=>bank.find(x=>x.id==id))),true,"收藏练习");
 $("#favclr").onclick=()=>{if(confirm("确定清空收藏？")){fav={};sv(K.fav,fav);go("fav")}};
 $$("[data-unfav]").forEach(b=>b.onclick=()=>{delete fav[b.dataset.unfav];sv(K.fav,fav);go("fav")})}
