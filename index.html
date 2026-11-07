@@ -39,6 +39,7 @@ label{display:block;margin:6px 0}.opt{display:flex;align-items:flex-start;gap:12
 .qwrap{position:relative}.ann-cv{position:absolute;left:0;top:0;z-index:15;touch-action:none;cursor:crosshair;pointer-events:auto}
 .ann-hint{font-size:12px;color:#b35c00;background:#fdeede;padding:4px 8px;border-radius:4px;width:100%}
 button.b.onann{background:#b35c00}
+.draft{margin:8px 0}.draft summary{cursor:pointer;color:#1e5bb8;font-size:14px;padding:4px 0}.draft textarea{width:100%;font-size:16px;line-height:1.6;min-height:140px;resize:vertical;margin-top:4px;background:#fffef7}
 .ann-bar{padding:4px 6px;gap:4px}.ann-bar button.b{padding:3px 9px;font-size:12px;margin:0;border-radius:5px}.ann-hint{font-size:11px}
 .qhead{font-size:14px}.qhead button.b{padding:4px 10px;font-size:13px;margin:0 0 0 6px}
 .cntbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin:8px 0}
@@ -279,6 +280,7 @@ function showQ(){clearAnn();const q=S.qs[S.i];S.qt0=Date.now();app.innerHTML=`<d
 <span class="ann-hint" id="ann-hint" style="display:none">标注开启中：请先点「标注」关闭后再点选项作答</span></div>
 <div class="qwrap" id="qwrap"><div>${tags(q)}</div>${matHTML(q,1)}${q.image?`<img class="qimg" src="${esc(q.image)}" alt="题目图片" loading="lazy">`:""}<p class="qstem">${esc(reflow(q.stem||""))}</p>
 ${"ABCD".split("").map(k=>`<button class="opt" data-k="${k}"><span class="ol">${k}.</span><span class="ot">${esc(q.image&&q.options[k]===k?"":q.options[k])}</span><span class="oi"></span></button>`).join("")}</div>
+<details class="draft"><summary>草稿纸</summary><textarea id="draft" rows="6" placeholder="在这里列式、写思路（只保留到本题结束）"></textarea></details>
 <div id="fb"></div>${favBtn(q.id)}<button class="b g" id="quit">结束练习</button></div>`;bindFav();
 if(S.timer&&!timerId)timerId=setInterval(()=>{const t=$("#tm");if(t)t.textContent="⏱ "+fmt(el())},1000);
 $$(".opt").forEach(b=>b.onclick=()=>{if(Ann.on)return;answer(b.dataset.k)});$("#quit").onclick=()=>{clearAnn();summary()};$("#exitp").onclick=()=>{if(!confirm("退出刷题？已答题目的记录会保留。"))return;clearAnn();go("practice")};wireAnnBar()}
