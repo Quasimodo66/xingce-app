@@ -62,9 +62,12 @@ let TAX={};try{TAX=(JSON.parse(document.getElementById("base-data").textContent)
 if(!Object.keys(TAX).length)TAX={"常识判断":["时政","政治","经济","法律","历史","地理","科技","人文","生活常识/其他"].map(t=>({qtype:t,qsubtypes:[]})),"言语理解与表达":[{qtype:"逻辑填空",qsubtypes:[]},{qtype:"片段阅读",qsubtypes:["中心理解","细节判断","标题填入","语句排序","语句填空","下文推断"]},{qtype:"语句表达",qsubtypes:[]}],"数量关系":[{qtype:"数学运算",qsubtypes:["行程","工程","经济利润","排列组合与概率","几何","容斥","年龄/和差倍比","最值/抽屉","其他"]},{qtype:"数字推理",qsubtypes:[]}],"判断推理":[{qtype:"图形推理",qsubtypes:[]},{qtype:"定义判断",qsubtypes:[]},{qtype:"类比推理",qsubtypes:[]},{qtype:"逻辑判断",qsubtypes:["翻译推理","真假推理","分析推理","加强削弱","原因解释","归纳推理"]}],"资料分析":["增长类","比重类","平均数类","倍数类","综合分析","其他计算"].map(t=>({qtype:t,qsubtypes:[]}))};
 const qtypesOf=m=>(TAX[m]||[]).map(x=>x.qtype);
 const qsubsOf=(m,t)=>((TAX[m]||[]).find(x=>x.qtype===t)||{qsubtypes:[]}).qsubtypes;
-const K={bank:"xc_bank",wrong:"xc_wrong",stats:"xc_stats2",done:"xc_done",skip:"xc_skipdone"};
+const K={bank:"xc_bank",wrong:"xc_wrong",stats:"xc_stats2",done:"xc_done",skip:"xc_skipdone",fav:"xc_fav"};
 const ld=(k,d)=>{try{const v=JSON.parse(localStorage.getItem(k));return v??d}catch(e){return d}};
 const sv=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+let fav=ld(K.fav,{});
+function favBtn(id){return `<button class="b g favb" type="button" data-fav="${esc(id)}">${fav[id]?"★ 已收藏":"☆ 收藏"}</button>`}
+function bindFav(){$$("[data-fav]").forEach(b=>b.onclick=()=>{const id=b.dataset.fav;if(fav[id])delete fav[id];else fav[id]=new Date().toISOString();sv(K.fav,fav);b.textContent=fav[id]?"★ 已收藏":"☆ 收藏";nav()})}
 const clone=o=>JSON.parse(JSON.stringify(o));
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const $=s=>document.querySelector(s);const $$=s=>[...document.querySelectorAll(s)];const app=$("#app");
@@ -97,10 +100,10 @@ loadBank();
 let wrong=ld(K.wrong,{});
 // 统计：{mod:{模块:{n,c,tn,t}}, qt:{题型:{...}}}，t 为累计用时(ms)，tn 为有计时的作答数
 let stats=ld(K.stats,null);if(!stats){stats={mod:{},qt:{},st:{}};const old=ld("xc_stats",{});Object.keys(old).forEach(m=>stats.mod[m]={n:old[m].n,c:old[m].c,tn:0,t:0});sv(K.stats,stats)}if(!stats.st)stats.st={};
-const TABS=[["bank","题库"],["practice","练习"],["wrong","错题本"],["stats","统计"],["help","帮助"]];
+const TABS=[["bank","题库"],["practice","练习"],["wrong","错题本"],["fav","收藏"],["stats","统计"],["help","帮助"]];
 let cur="bank",timerId=null;
-function nav(){$("#nav").innerHTML=TABS.map(([k,n])=>`<button data-t="${k}" class="${k==cur?"on":""}">${n}${k=="wrong"?"("+Object.keys(wrong).length+")":""}</button>`).join("");$$("#nav button").forEach(b=>b.onclick=()=>go(b.dataset.t))}
-function go(t){cur=t;if(timerId){clearInterval(timerId);timerId=null}nav();({bank:vBank,practice:vPractice,wrong:vWrong,stats:vStats,help:vHelp})[t]()}
+function nav(){$("#nav").innerHTML=TABS.map(([k,n])=>`<button data-t="${k}" class="${k==cur?"on":""}">${n}${k=="wrong"?"("+Object.keys(wrong).length+")":k=="fav"?"("+Object.keys(fav).length+")":""}</button>`).join("");$$("#nav button").forEach(b=>b.onclick=()=>go(b.dataset.t))}
+function go(t){cur=t;if(timerId){clearInterval(timerId);timerId=null}nav();({bank:vBank,practice:vPractice,wrong:vWrong,fav:vFav,stats:vStats,help:vHelp})[t]()}
 const uniq=f=>[...new Set(bank.map(f).filter(v=>v!==null&&v!==undefined&&v!==""))].sort();
 const opts=(arr,all,cur)=>`<option value="">${all}</option>`+arr.map(v=>`<option ${String(v)===String(cur)?"selected":""}>${esc(v)}</option>`).join("");
 // 通用筛选
@@ -277,7 +280,7 @@ ${S.timer?`<span id="tm">⏱ ${fmt(Date.now()-S.t0)}</span>`:""}</div>
 <span class="ann-hint" id="ann-hint" style="display:none">标注开启中：请先点「标注」关闭后再点选项作答</span></div>
 <div class="qwrap" id="qwrap"><div>${tags(q)}</div>${matHTML(q,1)}${q.image?`<img class="qimg" src="${esc(q.image)}" alt="题目图片" loading="lazy">`:""}<p class="qstem">${esc(q.stem||"")}</p>
 ${"ABCD".split("").map(k=>`<button class="opt" data-k="${k}"><span class="ol">${k}.</span><span class="ot">${esc(q.image&&q.options[k]===k?"":q.options[k])}</span><span class="oi"></span></button>`).join("")}</div>
-<div id="fb"></div><button class="b g" id="quit">结束练习</button></div>`;
+<div id="fb"></div>${favBtn(q.id)}<button class="b g" id="quit">结束练习</button></div>`;bindFav();
 if(S.timer&&!timerId)timerId=setInterval(()=>{const t=$("#tm");if(t)t.textContent="⏱ "+fmt(Date.now()-S.t0)},1000);
 $$(".opt").forEach(b=>b.onclick=()=>{if(Ann.on)return;answer(b.dataset.k)});$("#quit").onclick=()=>{clearAnn();summary()};wireAnnBar()}
 function answer(k){const q=S.qs[S.i];if(S.res.length>S.i)return;const ms=Date.now()-S.qt0;const ok=k==q.answer;S.res.push({q,ok,ms});record(q,ok,ms);done[q.id]=ok;sv(K.done,done);
@@ -296,12 +299,25 @@ ${tbl("模块",by,MODS)}<button class="b" id="again">再练一次</button><butto
 // ---- 错题本
 const dt=s=>{const d=new Date(s);return isNaN(d)?String(s||""):d.toLocaleString("zh-CN")};
 function vWrong(){const ids=Object.keys(wrong).filter(id=>bank.some(x=>x.id==id));
-app.innerHTML=`<div class="card"><p>共 ${ids.length} 道错题。连续答对 2 次自动移出。</p><button class="b" id="redo" ${ids.length?"":"disabled"}>重做错题</button><button class="b r" id="clr">清空错题本</button></div>`+ids.map(id=>{const q=bank.find(x=>x.id==id),w=wrong[id];return `<div class="card wq">${tags(q)}
+app.innerHTML=`<div class="card"><p>共 ${ids.length} 道错题。连续答对 2 次自动移出。</p><button class="b" id="redo" ${ids.length?"":"disabled"}>重做错题</button><button class="b r" id="clr">清空错题本</button><button class="b g" id="wfexp">导出错题+收藏</button></div>`+ids.map(id=>{const q=bank.find(x=>x.id==id),w=wrong[id];return `<div class="card wq">${tags(q)}
 <div class="muted">${esc(q.source||"")}<br>错 ${w.count} 次 · 最近错误：${esc(dt(w.last))} · 连对 ${w.streak||0}</div>${matHTML(q)}${q.image?`<img class="qimg" src="${esc(q.image)}" alt="题目图片" loading="lazy">`:""}<p class="stem">${esc(q.stem||"")}</p><p>答案：<b>${q.answer}</b>. ${esc(q.options[q.answer])}</p>
 <details><summary>解析</summary><div class="exp">${esc(q.explanation)}</div></details><button class="b ok" data-m="${esc(id)}">已掌握</button></div>`}).join("");
-$("#redo").onclick=()=>start(shuffle(ids.map(id=>bank.find(x=>x.id==id))),true,"错题重做");
+$("#wfexp").onclick=exportWF;$("#redo").onclick=()=>start(shuffle(ids.map(id=>bank.find(x=>x.id==id))),true,"错题重做");
 $("#clr").onclick=()=>{if(confirm("确定清空错题本？")){wrong={};sv(K.wrong,wrong);go("wrong")}};
 $$("[data-m]").forEach(b=>b.onclick=()=>{delete wrong[b.dataset.m];sv(K.wrong,wrong);go("wrong")})}
+// ---- 收藏
+function exportWF(){const pick=q=>({id:q.id,module:q.module,qtype:q.qtype||null,qsubtype:q.qsubtype||null,exam:q.exam||null,year:q.year??null,source:q.source||null,stem:q.stem||"",options:q.options,answer:q.answer,explanation:q.explanation||""});
+const W=Object.entries(wrong).map(([id,w])=>{const q=bank.find(x=>x.id==id);return q?Object.assign(pick(q),{wrong_count:w.count,streak:w.streak||0,last_wrong:w.last||null}):null}).filter(Boolean);
+const F=Object.entries(fav).map(([id,t])=>{const q=bank.find(x=>x.id==id);return q?Object.assign(pick(q),{favorited_at:t,in_wrong:!!wrong[id]}):null}).filter(Boolean);
+const d=new Date(),ts=d.getFullYear()+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0")+"-"+String(d.getHours()).padStart(2,"0")+String(d.getMinutes()).padStart(2,"0");
+dl(`xingce-错题收藏-${ts}.json`,JSON.stringify({kind:"xingce-wrong-fav",version:1,exported_at:d.toISOString(),wrong_total:W.length,fav_total:F.length,wrong:W,favorites:F},null,1),"application/json")}
+function vFav(){const ids=Object.keys(fav).filter(id=>bank.some(x=>x.id==id)).sort((a,b)=>(fav[b]||"").localeCompare(fav[a]||""));
+app.innerHTML=`<div class="card"><p>共 ${ids.length} 道收藏题。</p><button class="b" id="favredo" ${ids.length?"":"disabled"}>练习收藏题</button><button class="b r" id="favclr" ${ids.length?"":"disabled"}>清空收藏</button><button class="b g" id="wfexp">导出错题+收藏</button></div>`+ids.map(id=>{const q=bank.find(x=>x.id==id);return `<div class="card wq">${tags(q)}
+<div class="muted">${esc(q.source||"")}<br>收藏于：${esc(dt(fav[id]))}</div>${matHTML(q)}${q.image?`<img class="qimg" src="${esc(q.image)}" alt="题目图片" loading="lazy">`:""}<p class="stem">${esc(q.stem||"")}</p>${"ABCD".split("").map(k=>`<div>${k}. ${esc(q.image&&q.options[k]===k?"":q.options[k]||"")}</div>`).join("")}
+<details><summary>答案与解析</summary><p>答案：<b>${q.answer}</b></p><div class="exp">${esc(q.explanation||"")}</div></details><button class="b r" data-unfav="${esc(id)}">取消收藏</button></div>`}).join("");
+$("#wfexp").onclick=exportWF;$("#favredo").onclick=()=>start(shuffle(ids.map(id=>bank.find(x=>x.id==id))),true,"收藏练习");
+$("#favclr").onclick=()=>{if(confirm("确定清空收藏？")){fav={};sv(K.fav,fav);go("fav")}};
+$$("[data-unfav]").forEach(b=>b.onclick=()=>{delete fav[b.dataset.unfav];sv(K.fav,fav);go("fav")})}
 // ---- 统计
 function wrongList(){return Object.entries(wrong).map(([id,w])=>{const q=bank.find(x=>x.id==id)||{};return{id,module:q.module??null,qtype:q.qtype??null,qsubtype:q.qsubtype??null,exam:q.exam??null,year:q.year??null,wrong_count:w.count,last_wrong:w.last}})}
 function statRows(obj){return Object.entries(obj).map(([k,o])=>({name:k,answered:o.n,correct:o.c,accuracy:o.n?+(o.c/o.n).toFixed(4):null,avg_time_sec:avg(o)==null?null:+(avg(o)/1000).toFixed(1)}))}
