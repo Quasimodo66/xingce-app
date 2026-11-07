@@ -20,18 +20,18 @@ nav button.on{background:#fff;color:#1e5bb8}main{max-width:900px;margin:auto;pad
 button.b{background:#1e5bb8;color:#fff;border:0;border-radius:6px;padding:7px 12px;margin:3px;cursor:pointer;font-size:14px}
 button.g{background:#888}button.r{background:#c0392b}button.ok{background:#27ae60}
 input,select,textarea{font-size:15px;padding:6px;border:1px solid #ccc;border-radius:6px;max-width:100%}textarea{width:100%}
-label{display:block;margin:6px 0}.opt{display:flex;align-items:flex-start;gap:12px;width:100%;min-height:44px;text-align:left;background:#fff;border:2px solid #9aa7b8;border-radius:12px;padding:12px 14px;margin:8px 0;cursor:pointer;font-size:11px;line-height:1.45;color:#111;font-weight:700;word-break:break-word;overflow-wrap:anywhere;box-sizing:border-box}
+label{display:block;margin:6px 0}.opt{display:flex;align-items:flex-start;gap:12px;width:100%;min-height:44px;text-align:left;background:#fff;border:2px solid #9aa7b8;border-radius:12px;padding:12px 14px;margin:8px 0;cursor:pointer;font-size:16px;line-height:1.5;color:#111;font-weight:600;word-break:break-word;overflow-wrap:anywhere;box-sizing:border-box}
 .opt:hover:not(:disabled){border-color:#1e5bb8;background:#f3f7ff}.opt:disabled{cursor:default;opacity:1;color:#111}
 .opt .ol{flex:none;display:inline;background:none;color:inherit;font-weight:700;font-size:inherit;width:auto;height:auto;border-radius:0;margin:0;padding:0 6px 0 0;line-height:inherit}
-.opt .ot{flex:1;min-width:0;font-weight:700}.opt .oi{flex:none;font-size:15px;font-weight:700;max-width:4.5em;line-height:1.2}
+.opt .ot{flex:1;min-width:0;font-weight:600}.opt .oi{flex:none;font-size:15px;font-weight:700;max-width:4.5em;line-height:1.2}
 .opt.right{background:#e3f8e8;border-color:#1e8e4a;border-width:3px}.opt.right .ol{background:none;color:#1e8e4a}.opt.right .oi::after{content:"✔ 正确";font-size:14px;color:#1e8e4a}
 .opt.wrong{background:#fde8e8;border-color:#c0392b;border-width:3px}.opt.wrong .ol{background:none;color:#c0392b}.opt.wrong .oi::after{content:"✘ 你的选择";font-size:14px;color:#c0392b}
-.qstem{font-size:12px;line-height:1.7;white-space:pre-wrap;color:#111}
-@media(min-width:768px){.opt{font-size:12px;min-height:48px}.opt .ol{width:auto;height:auto;font-size:inherit}.qstem{font-size:13px}}
+.qstem{font-size:17px;line-height:1.75;white-space:pre-wrap;color:#111}
+@media(min-width:768px){.opt{font-size:17px;min-height:48px}.opt .ol{width:auto;height:auto;font-size:inherit}.qstem{font-size:18px}}
 .tag{display:inline-block;background:#e8eefa;color:#1e5bb8;border-radius:4px;padding:1px 6px;font-size:12px;margin-right:4px}
 .muted{color:#777;font-size:13px}table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid #eee;padding:6px;text-align:left}
-.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.exp{background:#fffbe6;border-left:4px solid #f1c40f;padding:8px;margin-top:8px;white-space:pre-wrap}
-.hide{display:none}.stem{white-space:pre-wrap;line-height:1.6}.tag.warn{background:#fdeede;color:#b35c00}.src{margin-top:6px}.mat{background:#eef6ff;border-left:4px solid #1e5bb8;padding:8px;white-space:pre-wrap;max-height:320px;overflow:auto;margin:6px 0;font-size:14px}.flt{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.flt input[type=number]{width:80px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.exp{background:#fffbe6;border-left:4px solid #f1c40f;padding:10px;margin-top:8px;white-space:pre-wrap;font-size:15px;line-height:1.7}
+.hide{display:none}.stem{white-space:pre-wrap;line-height:1.6}.tag.warn{background:#fdeede;color:#b35c00}.src{margin-top:6px}.mat{background:#eef6ff;border-left:4px solid #1e5bb8;padding:8px;white-space:pre-wrap;max-height:320px;overflow:auto;margin:6px 0;font-size:15px;line-height:1.7}.flt{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.flt input[type=number]{width:80px}
 .qimg{max-width:100%;height:auto;display:block;margin:8px 0;border:1px solid #ddd;border-radius:8px;background:#fff}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.chip{border:1px solid #9aa7b8;background:#fff;border-radius:999px;padding:5px 12px;font-size:13px;cursor:pointer;color:#333;line-height:1.2}.chip.on{background:#1e5bb8;color:#fff;border-color:#1e5bb8}.chip.mod{font-weight:600}
 .ann-bar{position:sticky;top:0;z-index:30;background:#fffc;backdrop-filter:blur(4px);border:1px solid #ddd;border-radius:8px;padding:6px 8px;margin:8px 0;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
@@ -39,6 +39,8 @@ label{display:block;margin:6px 0}.opt{display:flex;align-items:flex-start;gap:12
 .qwrap{position:relative}.ann-cv{position:absolute;left:0;top:0;z-index:15;touch-action:none;cursor:crosshair;pointer-events:auto}
 .ann-hint{font-size:12px;color:#b35c00;background:#fdeede;padding:4px 8px;border-radius:4px;width:100%}
 button.b.onann{background:#b35c00}
+.ann-bar{padding:4px 6px;gap:4px}.ann-bar button.b{padding:3px 9px;font-size:12px;margin:0;border-radius:5px}.ann-hint{font-size:11px}
+.qhead{font-size:14px}.qhead button.b{padding:4px 10px;font-size:13px;margin:0 0 0 6px}
 .cntbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin:8px 0}
 </style></head><body>
 <header><h1>行测刷题</h1><nav id="nav"></nav></header>
@@ -270,8 +272,8 @@ function wireAnnBar(){const tog=$("#ann-tog");if(!tog)return;
  tog.onclick=()=>{Ann.on=!Ann.on;if(Ann.on){tog.classList.add("onann");tog.textContent="标注中";enableAnn()}else{clearAnn();tog.textContent="标注"}};
  $("#ann-erase").onclick=()=>{Ann.mode=Ann.mode==="erase"?"pen":"erase";$("#ann-erase").classList.toggle("onann",Ann.mode==="erase")};
  $("#ann-undo").onclick=()=>{Ann.strokes.pop();redrawAnn()}}
-function showQ(){clearAnn();const q=S.qs[S.i];S.qt0=Date.now();app.innerHTML=`<div class="card"><div class="row" style="justify-content:space-between"><span>${S.title} 第 ${S.i+1} / ${S.qs.length} 题</span>
-${S.timer?`<span id="tm">⏱ ${fmt(el())}</span>`:""}</div>
+function showQ(){clearAnn();const q=S.qs[S.i];S.qt0=Date.now();app.innerHTML=`<div class="card"><div class="row qhead" style="justify-content:space-between"><span>${S.title} 第 ${S.i+1} / ${S.qs.length} 题</span>
+<span>${S.timer?`<span id="tm">⏱ ${fmt(el())}</span>`:""}<button class="b r" id="exitp" type="button">退出</button></span></div>
 <div class="ann-bar"><button class="b" id="ann-tog" type="button">标注</button>
 <button class="b g" id="ann-erase" type="button">橡皮</button><button class="b g" id="ann-undo" type="button">撤销</button>
 <span class="ann-hint" id="ann-hint" style="display:none">标注开启中：请先点「标注」关闭后再点选项作答</span></div>
@@ -279,7 +281,7 @@ ${S.timer?`<span id="tm">⏱ ${fmt(el())}</span>`:""}</div>
 ${"ABCD".split("").map(k=>`<button class="opt" data-k="${k}"><span class="ol">${k}.</span><span class="ot">${esc(q.image&&q.options[k]===k?"":q.options[k])}</span><span class="oi"></span></button>`).join("")}</div>
 <div id="fb"></div>${favBtn(q.id)}<button class="b g" id="quit">结束练习</button></div>`;bindFav();
 if(S.timer&&!timerId)timerId=setInterval(()=>{const t=$("#tm");if(t)t.textContent="⏱ "+fmt(el())},1000);
-$$(".opt").forEach(b=>b.onclick=()=>{if(Ann.on)return;answer(b.dataset.k)});$("#quit").onclick=()=>{clearAnn();summary()};wireAnnBar()}
+$$(".opt").forEach(b=>b.onclick=()=>{if(Ann.on)return;answer(b.dataset.k)});$("#quit").onclick=()=>{clearAnn();summary()};$("#exitp").onclick=()=>{if(!confirm("退出刷题？已答题目的记录会保留。"))return;clearAnn();go("practice")};wireAnnBar()}
 function answer(k){const q=S.qs[S.i];if(S.res.length>S.i)return;const ms=Date.now()-S.qt0;const ok=k==q.answer;S.res.push({q,ok,ms});record(q,ok,ms);done[q.id]=ok;sv(K.done,done);
 $$(".opt").forEach(b=>{b.disabled=true;if(b.dataset.k==q.answer)b.classList.add("right");else if(b.dataset.k==k)b.classList.add("wrong")});
 $("#fb").innerHTML=`<p style="font-weight:bold;font-size:18px;color:${ok?"#1e8e4a":"#c0392b"}">${ok?"✔ 回答正确":"✘ 回答错误，正确答案："+q.answer}　<span class="muted">本题用时 ${sec(ms)}</span></p><div class="exp">解析：${esc(reflow(q.explanation))||"（仓库未提供解析）"}</div><div class="muted src">${esc(q.source||"")}${q.note?" · ⚠ "+esc(q.note):""}</div>
