@@ -225,9 +225,6 @@ app.innerHTML=`<div class="card"><h3>开始练习</h3>
 <div class="muted">题型（可多选，不选=该模块全部）</div><div id="pQts"></div>
 <div class="row" id="pSubRow"></div>
 <div class="flt" style="margin-top:6px">
-<select id="pt">${opts(TYPES,"全部类型",pf.t)}</select>
-<select id="pe">${opts(uniq(q=>q.exam),"全部考试",pf.e)}</select>
-年份 <input type="number" id="py1" placeholder="起" value="${pf.y1??""}"> – <input type="number" id="py2" placeholder="止" value="${pf.y2??""}">
 <select id="pd">${opts(["1","2","3","4","5","未标"],"全部难度",pf.d)}</select>
 </div>
 <p class="muted" id="pcnt"></p>
@@ -239,11 +236,11 @@ function renderQts(){const mods=pMods();const checked=new Set(pf.qts||[]);
  $$("#pQts .chip").forEach(c=>c.onclick=()=>{c.classList.toggle("on");pf.qts=$$("#pQts .chip.on").map(x=>x.dataset.qt);pf.qs="";renderSub();updCount()});
  renderSub()}
 function renderSub(){$("#pSubRow").innerHTML=subSelectHTML(pMods(),pf.qts,pf.qs);if($("#subSel"))$("#subSel").onchange=()=>{pf.qs=$("#subSel").value;updCount()}}
-function readP(){pf.t=$("#pt").value;pf.e=$("#pe").value;pf.d=$("#pd").value;pf.y1=$("#py1").value===""?null:parseInt($("#py1").value);pf.y2=$("#py2").value===""?null:parseInt($("#py2").value);pf.qs=($("#subSel")&&$("#subSel").value)||"";pf.qt="";pf.qts=$$("#pQts .chip.on").map(x=>x.dataset.qt);pf.m=""}
+function readP(){pf.t="";pf.e="";pf.d=$("#pd").value;pf.y1=null;pf.y2=null;pf.qs=($("#subSel")&&$("#subSel").value)||"";pf.qt="";pf.qts=$$("#pQts .chip.on").map(x=>x.dataset.qt);pf.m=""}
 function pool(){readP();const ms=pMods();const f=Object.assign({},pf,{m:""});return bank.filter(x=>!x.exclude_practice&&ms.includes(x.module)&&match(x,f))}
 function updCount(){$("#pcnt").textContent=`符合条件 ${pool().length} 题（跨全部试卷）`}
 $$("#pMods .chip").forEach(c=>c.onclick=()=>{c.classList.toggle("on");if(!pMods().length)c.classList.add("on");pf.qts=[];renderQts();updCount()});
-["pt","pe","pd","py1","py2"].forEach(id=>$("#"+id).onchange=updCount);
+$("#pd").onchange=updCount;
 renderQts();updCount();
 $("#start").onclick=function(){const all=pool();if(!all.length)return alert("没有符合条件的题目");let qs=shuffle(unseen(all)).slice(0,Math.max(1,+$("#pn").value||10));if(!qs.length)return alert(SKIP_MSG);start(qs,$("#ptimer").checked,"练习")};
 $("#pskip").onchange=e=>sv(K.skip,e.target.checked)
