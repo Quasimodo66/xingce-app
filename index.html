@@ -275,7 +275,7 @@ ${S.timer?`<span id="tm">⏱ ${fmt(el())}</span>`:""}</div>
 <div class="ann-bar"><button class="b" id="ann-tog" type="button">标注</button>
 <button class="b g" id="ann-erase" type="button">橡皮</button><button class="b g" id="ann-undo" type="button">撤销</button>
 <span class="ann-hint" id="ann-hint" style="display:none">标注开启中：请先点「标注」关闭后再点选项作答</span></div>
-<div class="qwrap" id="qwrap"><div>${tags(q)}</div>${matHTML(q,1)}${q.image?`<img class="qimg" src="${esc(q.image)}" alt="题目图片" loading="lazy">`:""}<p class="qstem">${esc(q.stem||"")}</p>
+<div class="qwrap" id="qwrap"><div>${tags(q)}</div>${matHTML(q,1)}${q.image?`<img class="qimg" src="${esc(q.image)}" alt="题目图片" loading="lazy">`:""}<p class="qstem">${esc(reflow(q.stem||""))}</p>
 ${"ABCD".split("").map(k=>`<button class="opt" data-k="${k}"><span class="ol">${k}.</span><span class="ot">${esc(q.image&&q.options[k]===k?"":q.options[k])}</span><span class="oi"></span></button>`).join("")}</div>
 <div id="fb"></div>${favBtn(q.id)}<button class="b g" id="quit">结束练习</button></div>`;bindFav();
 if(S.timer&&!timerId)timerId=setInterval(()=>{const t=$("#tm");if(t)t.textContent="⏱ "+fmt(el())},1000);
@@ -299,7 +299,7 @@ ${tbl("模块",by,MODS)}<button class="b" id="again">再练一次</button><butto
 const dt=s=>{const d=new Date(s);return isNaN(d)?String(s||""):d.toLocaleString("zh-CN")};
 function vWrong(){const ids=Object.keys(wrong).filter(id=>bank.some(x=>x.id==id));
 app.innerHTML=`<div class="card"><p>共 ${ids.length} 道错题。连续答对 2 次自动移出。</p><button class="b" id="redo" ${ids.length?"":"disabled"}>重做错题</button><button class="b r" id="clr">清空错题本</button><button class="b g" id="wfexp">导出错题+收藏</button></div>`+ids.map(id=>{const q=bank.find(x=>x.id==id),w=wrong[id];return `<div class="card wq">${tags(q)}
-<div class="muted">${esc(q.source||"")}<br>错 ${w.count} 次 · 最近错误：${esc(dt(w.last))} · 连对 ${w.streak||0}</div>${matHTML(q)}${q.image?`<img class="qimg" src="${esc(q.image)}" alt="题目图片" loading="lazy">`:""}<p class="stem">${esc(q.stem||"")}</p><p>答案：<b>${q.answer}</b>. ${esc(q.options[q.answer])}</p>
+<div class="muted">${esc(q.source||"")}<br>错 ${w.count} 次 · 最近错误：${esc(dt(w.last))} · 连对 ${w.streak||0}</div>${matHTML(q)}${q.image?`<img class="qimg" src="${esc(q.image)}" alt="题目图片" loading="lazy">`:""}<p class="stem">${esc(reflow(q.stem||""))}</p><p>答案：<b>${q.answer}</b>. ${esc(q.options[q.answer])}</p>
 <details><summary>解析</summary><div class="exp">${esc(reflow(q.explanation))}</div></details><button class="b ok" data-m="${esc(id)}">已掌握</button></div>`}).join("");
 $("#wfexp").onclick=exportWF;$("#redo").onclick=()=>start(shuffle(ids.map(id=>bank.find(x=>x.id==id))),true,"错题重做");
 $("#clr").onclick=()=>{if(confirm("确定清空错题本？")){wrong={};sv(K.wrong,wrong);go("wrong")}};
@@ -312,7 +312,7 @@ const d=new Date(),ts=d.getFullYear()+String(d.getMonth()+1).padStart(2,"0")+Str
 dl(`xingce-错题收藏-${ts}.json`,JSON.stringify({kind:"xingce-wrong-fav",version:1,exported_at:d.toISOString(),wrong_total:W.length,fav_total:F.length,wrong:W,favorites:F},null,1),"application/json")}
 function vFav(){const ids=Object.keys(fav).filter(id=>bank.some(x=>x.id==id)).sort((a,b)=>(fav[b]||"").localeCompare(fav[a]||""));
 app.innerHTML=`<div class="card"><p>共 ${ids.length} 道收藏题。</p><button class="b" id="favredo" ${ids.length?"":"disabled"}>练习收藏题</button><button class="b r" id="favclr" ${ids.length?"":"disabled"}>清空收藏</button><button class="b g" id="wfexp">导出错题+收藏</button></div>`+ids.map(id=>{const q=bank.find(x=>x.id==id);return `<div class="card wq">${tags(q)}
-<div class="muted">${esc(q.source||"")}<br>收藏于：${esc(dt(fav[id]))}</div>${matHTML(q)}${q.image?`<img class="qimg" src="${esc(q.image)}" alt="题目图片" loading="lazy">`:""}<p class="stem">${esc(q.stem||"")}</p>${"ABCD".split("").map(k=>`<div>${k}. ${esc(q.image&&q.options[k]===k?"":q.options[k]||"")}</div>`).join("")}
+<div class="muted">${esc(q.source||"")}<br>收藏于：${esc(dt(fav[id]))}</div>${matHTML(q)}${q.image?`<img class="qimg" src="${esc(q.image)}" alt="题目图片" loading="lazy">`:""}<p class="stem">${esc(reflow(q.stem||""))}</p>${"ABCD".split("").map(k=>`<div>${k}. ${esc(q.image&&q.options[k]===k?"":q.options[k]||"")}</div>`).join("")}
 <details><summary>答案与解析</summary><p>答案：<b>${q.answer}</b></p><div class="exp">${esc(reflow(q.explanation||""))}</div></details><button class="b r" data-unfav="${esc(id)}">取消收藏</button></div>`}).join("");
 $("#wfexp").onclick=exportWF;$("#favredo").onclick=()=>start(shuffle(ids.map(id=>bank.find(x=>x.id==id))),true,"收藏练习");
 $("#favclr").onclick=()=>{if(confirm("确定清空收藏？")){fav={};sv(K.fav,fav);go("fav")}};
