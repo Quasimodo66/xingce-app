@@ -44,6 +44,26 @@ button.b.onann{background:#b35c00}
 .ann-bar{padding:4px 6px;gap:4px}.ann-bar button.b{padding:3px 9px;font-size:12px;margin:0;border-radius:5px}.ann-hint{font-size:11px}
 .qhead{font-size:14px}.qhead button.b{padding:4px 10px;font-size:13px;margin:0 0 0 6px}
 .cntbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin:8px 0}
+.quiz{touch-action:pan-y pinch-zoom}.slide-next{animation:slNext .22s ease-out}.slide-prev{animation:slPrev .22s ease-out}
+@keyframes slNext{from{transform:translateX(36px);opacity:.35}to{transform:none;opacity:1}}@keyframes slPrev{from{transform:translateX(-36px);opacity:.35}to{transform:none;opacity:1}}
+.qnav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:12px 0 4px}.qnav button.b{margin:0;padding:9px 16px;font-size:15px;min-width:92px}.qnav button.b:disabled{opacity:.4}
+.swhint{font-size:12px;color:#999;text-align:center;flex:1}
+nav button.resume{background:#f39c12;color:#fff;font-weight:700}nav button.resume.on{background:#fff;color:#e67e22}
+.resume-card{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;background:#fff7e6;border:1px solid #f5c26b}
+#toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#000c;color:#fff;padding:8px 16px;border-radius:20px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:99;max-width:90vw;text-align:center}#toast.show{opacity:1}
+.chip .cn{margin-left:5px;font-size:11px;opacity:.7}.ynote{font-size:12px;color:#999;margin:-2px 0 6px}
+.res{border-radius:10px;padding:10px 14px;margin:14px 0 10px;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px}.res.ok{background:#e3f8e8;color:#1e8e4a}.res.bad{background:#fde8e8;color:#c0392b}
+.res .rt{font-weight:700;font-size:18px}.res .rd{color:#333;font-size:15px}.res .rd b{font-size:19px}.res.ok .rd b,.res .rd b.ans{color:#1e8e4a}.res .rd b.mine{color:#c0392b}
+.xcard{background:#fffdf5;border:1px solid #f0e2b6;border-radius:12px;padding:12px 14px;margin:8px 0}
+.xtitle{font-weight:700;font-size:15px;color:#8a6d00;margin-bottom:8px;padding-left:8px;border-left:4px solid #f1c40f;line-height:1.2}
+.exp2{font-size:16px;line-height:1.8;color:#2a2a2a;word-break:break-word;overflow-wrap:anywhere}.exp2 p{margin:0 0 8px}.exp2 p:last-child{margin-bottom:0}
+details .exp2{background:#fffdf5;border-left:4px solid #f1c40f;border-radius:6px;padding:10px 12px;margin-top:6px;font-size:15px}
+.xn{display:inline-block;background:#1e5bb8;color:#fff;font-size:12px;border-radius:4px;padding:0 6px;margin-right:6px;line-height:20px;vertical-align:1px;font-weight:600}
+.xl{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;border-radius:50%;background:#e8eefa;color:#1e5bb8;font-weight:700;font-size:13px;margin-right:6px;vertical-align:1px}
+.xans{background:#e3f8e8;border-radius:8px;padding:6px 10px;color:#1e6b3a;font-weight:600}
+.xh{font-weight:700;color:#b35c00;font-size:14px;margin:12px 0 6px;padding-top:10px;border-top:1px dashed #e5d3a1}
+.exp2 .ext{color:#555;font-size:15px}.exp2 .xsrc{font-size:13px;color:#888;margin-top:10px}
+.xbadge{display:inline-block;font-size:12px;color:#b35c00;background:#fdeede;border-radius:4px;padding:1px 6px;margin-bottom:6px}
 </style></head><body>
 <header><nav id="nav"></nav></header>
 <main id="app"></main>
@@ -106,8 +126,15 @@ let wrong=ld(K.wrong,{});
 let stats=ld(K.stats,null);if(!stats){stats={mod:{},qt:{},st:{}};const old=ld("xc_stats",{});Object.keys(old).forEach(m=>stats.mod[m]={n:old[m].n,c:old[m].c,tn:0,t:0});sv(K.stats,stats)}if(!stats.st)stats.st={};
 const TABS=[["bank","题库"],["practice","练习"],["wrong","错题本"],["fav","收藏"],["stats","统计"]];
 let cur="bank",timerId=null;
-function nav(){$("#nav").innerHTML=TABS.map(([k,n])=>`<button data-t="${k}" class="${k==cur?"on":""}">${n}${k=="wrong"?"("+Object.keys(wrong).length+")":k=="fav"?"("+Object.keys(fav).length+")":""}</button>`).join("");$$("#nav button").forEach(b=>b.onclick=()=>go(b.dataset.t))}
-function go(t){cur=t;if(timerId){clearInterval(timerId);timerId=null}nav();({bank:vBank,practice:vPractice,wrong:vWrong,fav:vFav,stats:vStats,help:vHelp})[t]()}
+function nav(){$("#nav").innerHTML=TABS.map(([k,n])=>`<button data-t="${k}" class="${k==cur?"on":""}">${n}${k=="wrong"?"("+Object.keys(wrong).length+")":k=="fav"?"("+Object.keys(fav).length+")":""}</button>`).join("")+(S?`<button data-t="quiz" class="resume ${cur==="quiz"?"on":""}">${cur==="quiz"?"✎ 刷题中":"▶ 继续刷题"} ${S.i+1}/${S.qs.length}</button>`:"");$$("#nav button").forEach(b=>b.onclick=()=>go(b.dataset.t))}
+function go(t){if(t==="quiz"&&!S)t="practice";if(S&&cur==="quiz"&&t!=="quiz"){S.away=S.away||Date.now();clearAnn()}cur=t;if(timerId){clearInterval(timerId);timerId=null}nav();({bank:vBank,practice:vPractice,wrong:vWrong,fav:vFav,stats:vStats,help:vHelp,quiz:resumeQuiz})[t]()}
+// 刷题会话：切到别的主项时保留，可随时回来
+function resumeQuiz(){if(S.away){if(!S.ans[S.i]&&S.qt0)S.qt0+=Date.now()-S.away;S.away=null}showQ(null,true)}
+function saveS(){try{if(!S){localStorage.removeItem("xc_session");return}const ans={};Object.keys(S.ans).forEach(i=>{const r=S.ans[i];ans[i]={k:r.k,ok:r.ok,ms:r.ms}});sv("xc_session",{ids:S.qs.map(q=>q.id),i:S.i,ans,drafts:S.drafts,timer:S.timer,title:S.title})}catch(e){}}
+function loadS(){const ss=ld("xc_session",null);if(!ss||!Array.isArray(ss.ids)||!ss.ids.length)return;const M=new Map(bank.map(q=>[q.id,q]));const qs=ss.ids.map(id=>M.get(id));if(qs.some(x=>!x)){localStorage.removeItem("xc_session");return}
+ const ans={},res=[];Object.keys(ss.ans||{}).forEach(i=>{const a=ss.ans[i];if(!qs[i])return;const r={q:qs[i],ok:!!a.ok,ms:a.ms,k:a.k};ans[i]=r;res.push(r)});
+ S={qs,i:Math.min(Math.max(0,ss.i|0),qs.length-1),res,ans,drafts:ss.drafts||{},t0:Date.now(),timer:!!ss.timer,title:ss.title||"练习"}}
+function toast(m){let t=$("#toast");if(!t){t=document.createElement("div");t.id="toast";document.body.appendChild(t)}t.textContent=m;t.className="show";clearTimeout(toast._t);toast._t=setTimeout(()=>t.className="",1800)}
 const uniq=f=>[...new Set(bank.map(f).filter(v=>v!==null&&v!==undefined&&v!==""))].sort();
 const opts=(arr,all,cur)=>`<option value="">${all}</option>`+arr.map(v=>`<option ${String(v)===String(cur)?"selected":""}>${esc(v)}</option>`).join("");
 // 通用筛选
@@ -170,7 +197,7 @@ function list(){readBankExtra();const arr=filtered(bf,bf.q);
 $("#cnt").textContent=`共 ${arr.length} / ${bank.length} 题`+(arr.length>bf.lim?`（显示前 ${bf.lim}）`:"");
 $("#list").innerHTML=arr.slice(0,bf.lim).map(x=>`<div class="card">${tags(x)}
 <div class="muted src">${esc(x.source)}</div>${x.note?`<span class="tag warn">${esc(x.note)}</span>`:""}${matHTML(x)}${x.image?`<img class="qimg" src="${esc(x.image)}" alt="题目图片" loading="lazy">`:""}<p class="stem">${esc(x.stem)}</p><div class="muted">${optKeys(x).map(k=>k+". "+esc(x.options[k])).join("<br>")}</div><p>答案：<b>${esc(x.answer)}</b></p>
-<details><summary>解析</summary><div class="exp">${esc(x.explanation)||"（无解析）"}</div></details><button class="b" data-e="${esc(x.id)}">编辑</button><button class="b r" data-d="${esc(x.id)}">删除</button></div>`).join("")+(arr.length>bf.lim?`<button class="b" id="more">加载更多</button>`:"");
+<details><summary>解析</summary>${expHTML(x.explanation)}</details><button class="b" data-e="${esc(x.id)}">编辑</button><button class="b r" data-d="${esc(x.id)}">删除</button></div>`).join("")+(arr.length>bf.lim?`<button class="b" id="more">加载更多</button>`:"");
 if($("#more"))$("#more").onclick=()=>{bf.lim+=50;list()};
 $$("[data-e]").forEach(b=>b.onclick=()=>form(bank.find(x=>x.id==b.dataset.e)));
 $$("[data-d]").forEach(b=>b.onclick=()=>{if(confirm("确定删除该题？")){bank=bank.filter(x=>x.id!=b.dataset.d);delete wrong[b.dataset.d];saveBank();sv(K.wrong,wrong);nav();list()}})}
@@ -221,30 +248,41 @@ ok.forEach(o=>{const i=bank.findIndex(x=>x.id==o.id);i>=0?bank[i]=o:bank.push(o)
 const miss=ok.filter(o=>o.material_id&&mats[o.material_id]===undefined).length;
 alert(`导入成功 ${ok.length} 题${bad?`，跳过无效 ${bad} 行`:""}${miss?`；${miss} 题引用的材料不存在，请再导入材料 CSV`:""}`);go("bank")}
 // ---- 练习
-let pf={m:"",t:"",e:"",qt:"",qs:"",qts:[],d:"",y1:null,y2:null},S=null;
+let pf={m:"",t:"",e:"",qt:"",qs:"",qts:[],d:"",y1:null,y2:null,ys:[]},S=null;
+const yKey=x=>x.year==null?"未标":String(x.year);
 function vPractice(){
-app.innerHTML=`<div class="card"><h3>开始练习</h3>
+app.innerHTML=`${S?`<div class="card resume-card"><div><b>有未完成的刷题</b><div class="muted">${esc(S.title)} · 第 ${S.i+1}/${S.qs.length} 题 · 已答 ${Object.keys(S.ans).length} 题</div></div><div><button class="b ok" id="resume" type="button">继续刷题</button><button class="b g" id="drop" type="button">放弃</button></div></div>`:""}<div class="card"><h3>开始练习</h3>
 <p class="muted">默认不限试卷，按模块 / 题型挑题（真题·模拟·自编一起练）。</p>
 <div class="muted">模块</div><div class="chips" id="pMods">${MODS.map(m=>`<button type="button" class="chip mod on" data-m="${esc(m)}">${esc(m)}</button>`).join("")}</div>
 <div class="muted">题型（可多选，不选=该模块全部）</div><div id="pQts"></div>
 <div class="row" id="pSubRow"></div>
+<div id="pYearBox"></div>
 <div class="flt" style="margin-top:6px">
 <select id="pd">${opts(["1","2","3","4","5","未标"],"全部难度",pf.d)}</select>
 </div>
 <p class="muted" id="pcnt"></p>
 <label>题量 <input id="pn" type="number" min="1" value="10" style="width:80px"></label><label><input type="checkbox" id="pskip" ${skipOn()?"checked":""}> 跳过已做对的题（错题照常出现）</label>
 <label><input type="checkbox" id="ptimer" checked> 显示计时</label><button class="b" id="start">开始</button></div>`;
+if(S){$("#resume").onclick=()=>go("quiz");$("#drop").onclick=()=>{if(!confirm("放弃这次未完成的刷题？已答题目的记录会保留。"))return;S=null;saveS();go("practice")}}
 function pMods(){return $$("#pMods .chip.on").map(x=>x.dataset.m)}
 function renderQts(){const mods=pMods();const checked=new Set(pf.qts||[]);
  $("#pQts").innerHTML=typeChipsHTML(mods, [...checked].filter(t=>mods.some(m=>qtypesOf(m).includes(t))));
  $$("#pQts .chip").forEach(c=>c.onclick=()=>{c.classList.toggle("on");pf.qts=$$("#pQts .chip.on").map(x=>x.dataset.qt);pf.qs="";renderSub();updCount()});
  renderSub()}
-function renderSub(){$("#pSubRow").innerHTML=subSelectHTML(pMods(),pf.qts,pf.qs);if($("#subSel"))$("#subSel").onchange=()=>{pf.qs=$("#subSel").value;updCount()}}
+function renderSub(){$("#pSubRow").innerHTML=subSelectHTML(pMods(),pf.qts,pf.qs);if($("#subSel"))$("#subSel").onchange=()=>{pf.qs=$("#subSel").value;renderYears();updCount()};renderYears()}
 function readP(){pf.t="";pf.e="";pf.d=$("#pd").value;pf.y1=null;pf.y2=null;pf.qs=($("#subSel")&&$("#subSel").value)||"";pf.qt="";pf.qts=$$("#pQts .chip.on").map(x=>x.dataset.qt);pf.m=""}
-function pool(){readP();const ms=pMods();const f=Object.assign({},pf,{m:""});return bank.filter(x=>!x.exclude_practice&&ms.includes(x.module)&&match(x,f))}
-function updCount(){$("#pcnt").textContent=`符合条件 ${pool().length} 题（跨全部试卷）`}
+// 常识判断（时政/政治/常识）年份：只作用于常识判断模块，其他模块不受影响
+function yearBase(){readP();if(!pMods().includes("常识判断"))return[];const f=Object.assign({},pf,{m:""});return bank.filter(x=>!x.exclude_practice&&x.module==="常识判断"&&match(x,f))}
+function yearOK(x){return x.module!=="常识判断"||!pf.ys.length||pf.ys.includes(yKey(x))}
+function renderYears(){const box=$("#pYearBox");const base=yearBase();if(!base.length){box.innerHTML="";return}
+ const cnt={};base.forEach(x=>{const y=yKey(x);cnt[y]=(cnt[y]||0)+1});const ys=Object.keys(cnt).sort((a,b)=>a==="未标"?1:b==="未标"?-1:b-a);pf.ys=(pf.ys||[]).filter(y=>cnt[y]);
+ const selT=pf.qts.filter(t=>qtypesOf("常识判断").includes(t));const lab=selT.length?selT.join("/"):"时政/常识（常识判断）";
+ box.innerHTML=`<div class="muted">${esc(lab)} 年份（可多选，不选=全部年份）</div><div class="chips" id="pYears"><button type="button" class="chip ${pf.ys.length?"":"on"}" data-y="">全部年份</button>${ys.map(y=>`<button type="button" class="chip ${pf.ys.includes(y)?"on":""}" data-y="${esc(y)}">${y==="未标"?"未标年份":esc(y)+" 年"}<span class="cn">${cnt[y]}</span></button>`).join("")}</div><div class="ynote">真题按考试年份；时政月度模拟题按所属年份。只筛常识判断，其他模块不受影响。</div>`;
+ $$("#pYears .chip").forEach(c=>c.onclick=()=>{const y=c.dataset.y;if(!y)pf.ys=[];else{const s=new Set(pf.ys);s.has(y)?s.delete(y):s.add(y);pf.ys=[...s]}$$("#pYears .chip").forEach(x=>x.classList.toggle("on",x.dataset.y?pf.ys.includes(x.dataset.y):!pf.ys.length));updCount()})}
+function pool(){readP();const ms=pMods();const f=Object.assign({},pf,{m:""});return bank.filter(x=>!x.exclude_practice&&ms.includes(x.module)&&match(x,f)&&yearOK(x))}
+function updCount(){$("#pcnt").textContent=`符合条件 ${pool().length} 题（跨全部试卷）`+(pf.ys.length?`；常识判断限 ${pf.ys.map(y=>y==="未标"?"未标年份":y).join("、")} 年`:"")}
 $$("#pMods .chip").forEach(c=>c.onclick=()=>{c.classList.toggle("on");if(!pMods().length)c.classList.add("on");pf.qts=[];renderQts();updCount()});
-$("#pd").onchange=updCount;
+$("#pd").onchange=()=>{renderYears();updCount()};
 renderQts();updCount();
 $("#start").onclick=function(){const all=pool();if(!all.length)return alert("没有符合条件的题目");let qs=shuffle(unseen(all)).slice(0,Math.max(1,+$("#pn").value||10));if(!qs.length)return alert(SKIP_MSG);start(qs,$("#ptimer").checked,"练习")};
 $("#pskip").onchange=e=>sv(K.skip,e.target.checked)
@@ -253,7 +291,7 @@ function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.rando
 let done=ld(K.done,{});const skipOn=()=>ld(K.skip,true)!==false;
 function unseen(arr){if(!skipOn())return arr;return arr.filter(x=>!(done[x.id]===true&&!wrong[x.id]))}
 const SKIP_MSG="符合条件的题都已做对过。可在练习页关闭「跳过已做对的题」后再刷。";
-function start(qs,timer,title){S={qs,i:0,res:[],t0:Date.now(),timer,title};showQ()}
+function start(qs,timer,title){S={qs,i:0,res:[],ans:{},drafts:{},t0:Date.now(),timer,title};saveS();showQ()}
 function fmt(ms){const s=ms/1000|0;return String(s/60|0).padStart(2,"0")+":"+String(s%60).padStart(2,"0")}
 const sec=ms=>ms==null?"—":(ms/1000).toFixed(1)+" 秒";
 let Ann={on:false,mode:"pen",color:"#e74c3c",w:2,strokes:[],drawing:false};
@@ -277,26 +315,37 @@ function wireAnnBar(){const tog=$("#ann-tog");if(!tog)return;
 function optKeys(q){return "ABCD".split("").filter(k=>q.options&&q.options[k]!=null&&String(q.options[k])!=="")}
 function isMulti(q){return q.qsubtype==="多选"||String(q.answer||"").length>1}
 function normAns(s){return String(s||"").toUpperCase().replace(/[^ABCD]/g,"").split("").sort().join("")}
-function showQ(){clearAnn();const q=S.qs[S.i];S.qt0=Date.now();const multi=isMulti(q);app.innerHTML=`<div class="card"><div class="row qhead" style="justify-content:space-between"><span>${S.title} 第 ${S.i+1} / ${S.qs.length} 题</span>
+function showQ(dir,keep){clearAnn();cur="quiz";const q=S.qs[S.i];const a=S.ans[S.i];if(!a&&(!keep||!S.qt0))S.qt0=Date.now();const multi=isMulti(q);
+app.innerHTML=`<div class="card quiz${dir?" slide-"+dir:""}" id="quizCard"><div class="row qhead" style="justify-content:space-between"><span>${esc(S.title)} 第 ${S.i+1} / ${S.qs.length} 题 <span class="muted" id="nAns">· 已答 ${Object.keys(S.ans).length}</span></span>
 <span>${S.timer?`<span id="tm">⏱ ${fmt(el())}</span>`:""}<button class="b r" id="exitp" type="button">退出</button></span></div>
 <div class="ann-bar"><button class="b" id="ann-tog" type="button">标注</button>
 <button class="b g" id="ann-erase" type="button">橡皮</button><button class="b g" id="ann-undo" type="button">撤销</button>
-<span class="ann-hint" id="ann-hint" style="display:none">标注开启中：请先点「标注」关闭后再点选项作答</span></div>
+<span class="ann-hint" id="ann-hint" style="display:none">标注开启中：请先点「标注」关闭后再点选项作答（标注时不能滑动切题）</span></div>
 <div class="qwrap" id="qwrap"><div>${tags(q)}</div>${matHTML(q,1)}${q.image?`<img class="qimg" src="${esc(q.image)}" alt="题目图片" loading="lazy">`:""}<p class="qstem">${esc(reflow(q.stem||""))}</p>
 ${optKeys(q).map(k=>`<button class="opt" data-k="${k}"><span class="ol">${k}.</span><span class="ot">${esc(q.image&&q.options[k]===k?"":q.options[k])}</span><span class="oi"></span></button>`).join("")}</div>
-${multi?`<button class="b" id="submit" type="button">确定</button>`:""}
-<details class="draft"><summary>草稿纸</summary><textarea id="draft" rows="6" placeholder="在这里列式、写思路（只保留到本题结束）"></textarea></details>
-<div id="fb"></div>${favBtn(q.id)}<button class="b g" id="quit">结束练习</button></div>`;bindFav();
+${multi&&!a?`<button class="b" id="submit" type="button">确定</button>`:""}
+<details class="draft" ${S.drafts[S.i]?"open":""}><summary>草稿纸</summary><textarea id="draft" rows="6" placeholder="在这里列式、写思路（本次刷题内保留）">${esc(S.drafts[S.i]||"")}</textarea></details>
+<div id="fb"></div>
+<div class="qnav"><button class="b g" id="prevq" type="button" ${S.i?"":"disabled"}>‹ 上一题</button><span class="swhint">← 左右滑动切换 →</span><button class="b ${a?"":"g"}" id="nextq" type="button">${S.i+1<S.qs.length?"下一题 ›":"查看总结"}</button></div>
+<div class="row">${favBtn(q.id)}<button class="b g" id="quit" type="button">结束练习</button></div></div>`;nav();bindFav();if(dir)window.scrollTo(0,0);
 if(S.timer&&!timerId)timerId=setInterval(()=>{const t=$("#tm");if(t)t.textContent="⏱ "+fmt(el())},1000);
-if(multi){$$(".opt").forEach(b=>b.onclick=()=>{if(Ann.on)return;b.classList.toggle("pick")});$("#submit").onclick=()=>{if(Ann.on)return;const sel=$$(".opt.pick").map(b=>b.dataset.k).sort().join("");if(!sel)return;answer(sel)}}
+if(a)paintAnswer(q,a);
+else if(multi){$$(".opt").forEach(b=>b.onclick=()=>{if(Ann.on)return;b.classList.toggle("pick")});$("#submit").onclick=()=>{if(Ann.on)return;const sel=$$(".opt.pick").map(b=>b.dataset.k).sort().join("");if(!sel)return;answer(sel)}}
 else $$(".opt").forEach(b=>b.onclick=()=>{if(Ann.on)return;answer(b.dataset.k)});
-$("#quit").onclick=()=>{clearAnn();summary()};$("#exitp").onclick=()=>{if(!confirm("退出刷题？已答题目的记录会保留。"))return;clearAnn();go("practice")};wireAnnBar()}
-function answer(k){const q=S.qs[S.i];if(S.res.length>S.i)return;const ms=Date.now()-S.qt0;const multi=isMulti(q);const ok=multi?normAns(k)===normAns(q.answer):k==q.answer;S.res.push({q,ok,ms});record(q,ok,ms);done[q.id]=ok;sv(K.done,done);
-const chosen=new Set(multi?normAns(k).split(""):[k]);const right=new Set(multi?normAns(q.answer).split(""):[q.answer]);
-$$(".opt").forEach(b=>{b.disabled=true;if(right.has(b.dataset.k))b.classList.add("right");else if(chosen.has(b.dataset.k))b.classList.add("wrong")});
-const sub=$("#submit");if(sub)sub.disabled=true;
-$("#fb").innerHTML=`<p style="font-weight:bold;font-size:18px;color:${ok?"#1e8e4a":"#c0392b"}">${ok?"✔ 回答正确":"✘ 回答错误，正确答案："+q.answer}　<span class="muted">本题用时 ${sec(ms)}</span></p><div class="exp">解析：${esc(reflow(q.explanation))||"（仓库未提供解析）"}</div><div class="muted src">${esc(q.source||"")}${q.note?" · ⚠ "+esc(q.note):""}</div>
-<button class="b" id="next">${S.i+1<S.qs.length?"下一题":"查看总结"}</button>`;$("#next").onclick=()=>{clearAnn();S.i++;S.i<S.qs.length?showQ():summary()};nav()}
+$("#draft").oninput=e=>{S.drafts[S.i]=e.target.value;clearTimeout(showQ._d);showQ._d=setTimeout(saveS,400)};
+$("#prevq").onclick=()=>moveQ(-1);$("#nextq").onclick=()=>moveQ(1,true);
+$("#quit").onclick=()=>{if(!confirmEnd())return;clearAnn();summary()};$("#exitp").onclick=()=>{if(!confirm("退出本次刷题？已答题目的记录会保留。"))return;clearAnn();S=null;saveS();go("practice")};wireAnnBar()}
+function confirmEnd(){const left=S.qs.length-Object.keys(S.ans).length;return !left||confirm(`还有 ${left} 题未作答，确定结束并查看总结？`)}
+function moveQ(d,btn){if(!S||cur!=="quiz")return;const j=S.i+d;if(j<0)return toast("已经是第一题");
+ if(j>=S.qs.length){if(btn){if(confirmEnd()){clearAnn();summary()}return}return toast("已是最后一题，点「查看总结」结束")}
+ clearAnn();S.qt0=null;S.i=j;saveS();showQ(d>0?"next":"prev")}
+function answer(k){const q=S.qs[S.i];if(S.ans[S.i])return;const ms=Date.now()-S.qt0;const multi=isMulti(q);const ok=multi?normAns(k)===normAns(q.answer):k==q.answer;const r={q,ok,ms,k};S.ans[S.i]=r;S.res.push(r);record(q,ok,ms);done[q.id]=ok;sv(K.done,done);saveS();
+paintAnswer(q,r);const na=$("#nAns");if(na)na.textContent="· 已答 "+Object.keys(S.ans).length;nav()}
+function paintAnswer(q,r){const multi=isMulti(q);const chosen=new Set(multi?normAns(r.k).split(""):[r.k]);const right=new Set(multi?normAns(q.answer).split(""):[q.answer]);
+$$(".opt").forEach(b=>{b.disabled=true;b.classList.remove("pick");if(right.has(b.dataset.k))b.classList.add("right");else if(chosen.has(b.dataset.k))b.classList.add("wrong")});
+const sub=$("#submit");if(sub)sub.remove();const nx=$("#nextq");if(nx)nx.classList.remove("g");
+$("#fb").innerHTML=`<div class="res ${r.ok?"ok":"bad"}"><span class="rt">${r.ok?"✔ 回答正确":"✘ 回答错误"}</span><span class="rd">正确答案 <b class="ans">${esc(q.answer)}</b>${r.ok||!r.k?"":`　你的选择 <b class="mine">${esc(r.k)}</b>`}　<span class="muted">用时 ${sec(r.ms)}</span></span></div>
+<div class="xcard"><div class="xtitle">答案解析</div>${expHTML(q.explanation)}</div><div class="muted src">${esc(q.source||"")}${q.note?" · ⚠ "+esc(q.note):""}</div>`;if(Ann.on)fitAnn()}
 function bump(o,ok,ms){o.n++;if(ok)o.c++;o.tn=(o.tn||0)+1;o.t=(o.t||0)+ms}
 function record(q,ok,ms){if(!stats.st)stats.st={};bump(stats.mod[q.module]||(stats.mod[q.module]={n:0,c:0,tn:0,t:0}),ok,ms);const t=q.qtype||"未分类";bump(stats.qt[t]||(stats.qt[t]={n:0,c:0,tn:0,t:0}),ok,ms);if(q.qsubtype){const st=t+"/"+q.qsubtype;bump(stats.st[st]||(stats.st[st]={n:0,c:0,tn:0,t:0}),ok,ms)}sv(K.stats,stats);
 if(!ok){const w=wrong[q.id]||{count:0,streak:0};w.count++;w.streak=0;w.last=new Date().toISOString();wrong[q.id]=w}
@@ -304,16 +353,52 @@ else if(wrong[q.id]){wrong[q.id].streak=(wrong[q.id].streak||0)+1;if(wrong[q.id]
 const pct=(c,n)=>n?(c/n*100).toFixed(1)+"%":"—";const avg=o=>o.tn?o.t/o.tn:null;
 function tbl(head,obj,keys){keys=keys||Object.keys(obj);return `<table><tr><th>${head}</th><th>作答</th><th>正确</th><th>正确率</th><th>平均用时</th></tr>${keys.filter(k=>obj[k]).map(k=>`<tr><td>${esc(k)}</td><td>${obj[k].n}</td><td>${obj[k].c}</td><td>${pct(obj[k].c,obj[k].n)}</td><td>${sec(avg(obj[k]))}</td></tr>`).join("")}</table>`}
 function reflow(s){if(!s)return s;const L=String(s).replace(/\r/g,"").split("\n").map(x=>x.trim());const W=Math.max(...L.map(x=>x.length));const M=/^(?:[A-DＡ-Ｄ]\s*[项選选]|[A-D][.．、:：]|[①-⑳]|\d{1,2}\s*[.、．)）](?!\d)|[（(]\d{1,2}[)）]|[一二三四五六七八九十]+[、.．]|【|故|因此|综上|所以|本题|答案|解析|第[一二三四五六七八九十\d]+[步题])/;let o="",p="";L.forEach(t=>{if(!t){if(o&&!o.endsWith("\n"))o+="\n";p="";return}if(!o||o.endsWith("\n"))o+=t;else if(M.test(t)||(/[。！？”"）)]$/.test(p)&&p.length<W*0.85))o+="\n"+t;else o+=t;p=t});return o}
-function el(){if(!S)return 0;let t=S.res.reduce((s,r)=>s+(r.ms||0),0);if(S.res.length<=S.i&&S.qt0)t+=Date.now()-S.qt0;return t}
+// ---- 解析排版
+const CJKC="\\u2018-\\u201d\\u2460-\\u2473\\u3000-\\u303f\\u3400-\\u9fff\\uff00-\\uffef";
+const RE_SP1=new RegExp("(["+CJKC+"])[ \\t]+","g"),RE_SP2=new RegExp("[ \\t]+(["+CJKC+"])","g");
+function tidy(s){return String(s||"").replace(/\r/g,"").replace(/[​﻿]/g,"").replace(/　/g," ").replace(RE_SP1,"$1").replace(RE_SP2,"$1").replace(/[ \t]{2,}/g," ")}
+const CONC_SRC="(?:本题(?:为|是)选[是非]题[，,]?)?(?:因此|故|所以|综上(?:所述)?)[，,]?(?:本题)?(?:正确答案|答案|选择|应选|选)";
+const RE_CONC=new RegExp("^(?:"+CONC_SRC+"|正确答案(?:是|为))");
+const RE_CONC_SPLIT=new RegExp("([。；！？”])\\s*(?="+CONC_SRC+")","g");
+function expLines(raw){let s=tidy(raw);for(let i=0;i<3;i++)s=s.replace(/([^。！？；：”」』）)\].!?:;\n])[ \t]*\n[ \t]*\n/g,"$1\n");s=reflow(s)||"";
+ s=s.replace(/([。；！？”])\s*(?=第[一二三四五六七八九十]步)/g,"$1\n").replace(RE_CONC_SPLIT,"$1\n")
+  .replace(/\s*(【(?:拓展|成语拓展|文段出处|文段来源|来源|备注|注)】)/g,"\n$1")
+  .replace(/(正确答案(?:是|为)[：:]?\s*【[A-D]+】)\s*/g,"$1\n")
+  .replace(/([。；])\s*(?=(?:[A-D①-⑩]项|选项[A-D])[：:，,])/g,"$1\n");
+ return s.split("\n").map(t=>t.trim()).filter(Boolean)}
+function expHTML(raw){if(!raw||!String(raw).trim())return `<div class="exp2"><p class="muted">（暂无解析）</p></div>`;
+ let out="",ext=false,badge="";
+ expLines(raw).forEach((t,idx)=>{let m;
+  if(idx===0&&(m=t.match(/^【(线上解析|自行推导思路|仓库推导思路，非原卷解析|解析)】\s*/))){badge=m[1];t=t.slice(m[0].length);if(!t)return}
+  if((m=t.match(/^【?(拓展|成语拓展)】?[：:]?\s*/))&&(m[0].includes("】")||t===m[0].trim()||/^拓展[：:]/.test(t))){out+=`<div class="xh">${m[1]}</div>`;ext=true;t=t.slice(m[0].length);if(!t)return}
+  if((m=t.match(/^【(文段出处|文段来源|来源|备注|注)】[：:]?\s*/))){out+=`<p class="xsrc"><b>${m[1]}</b>　${esc(t.slice(m[0].length))}</p>`;return}
+  if((m=t.match(/^(第[一二三四五六七八九十]步)[，,：:.、．]?\s*/))){out+=`<p class="xstep"><span class="xn">${m[1]}</span>${esc(t.slice(m[0].length))}</p>`;return}
+  if(RE_CONC.test(t)){out+=`<p class="xans">${esc(t)}</p>`;return}
+  if((m=t.match(/^(?:([A-D①-⑩])项|选项([A-D]))([：:，,])\s*/))){out+=`<p class="xopt${ext?" ext":""}"><span class="xl">${m[1]||m[2]}</span>${esc(t.slice(m[0].length))}</p>`;return}
+  out+=`<p${ext?' class="ext"':""}>${esc(t)}</p>`});
+ return `<div class="exp2">${badge?`<span class="xbadge">${esc(badge)}</span>`:""}${out}</div>`}
+// ---- 刷题手势：左滑下一题、右滑上一题；电脑可用 ← → 键
+function hScroll(el){for(;el&&el!==app;el=el.parentElement){if(el.scrollWidth>el.clientWidth+2){const o=getComputedStyle(el).overflowX;if(o==="auto"||o==="scroll")return true}}return false}
+(function(){let sx=0,sy=0,on=false,lock=null;const card=()=>$("#quizCard");
+ const reset=()=>{const c=card();if(c){c.style.transition="transform .2s,opacity .2s";c.style.transform="";c.style.opacity=""}};
+ app.addEventListener("touchstart",e=>{on=false;if(cur!=="quiz"||!S||Ann.on||e.touches.length!==1)return;const tg=e.target;if(tg.closest&&tg.closest("textarea,input,select,canvas,.ann-bar")||hScroll(tg))return;on=true;lock=null;sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
+ app.addEventListener("touchmove",e=>{if(!on)return;if(e.touches.length!==1){on=false;reset();return}const dx=e.touches[0].clientX-sx,dy=e.touches[0].clientY-sy;
+  if(lock===null&&(Math.abs(dx)>10||Math.abs(dy)>10))lock=Math.abs(dx)>Math.abs(dy)*1.2?"h":"v";
+  if(lock==="h"){const c=card();if(c){c.style.transition="none";c.style.transform=`translateX(${dx*0.35}px)`;c.style.opacity=String(Math.max(.55,1-Math.abs(dx)/600))}}},{passive:true});
+ app.addEventListener("touchend",e=>{if(!on)return;on=false;const t=e.changedTouches[0];const dx=t.clientX-sx,dy=t.clientY-sy;reset();
+  if(lock==="h"&&Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5){const sel=window.getSelection&&String(window.getSelection()||"");if(sel)return;moveQ(dx<0?1:-1)}},{passive:true});
+ app.addEventListener("touchcancel",()=>{on=false;reset()},{passive:true});
+ document.addEventListener("keydown",e=>{if(cur!=="quiz"||!S||Ann.on)return;const tg=e.target;if(tg&&tg.closest&&tg.closest("input,textarea,select"))return;if(e.key==="ArrowLeft")moveQ(-1);else if(e.key==="ArrowRight")moveQ(1)})})();
+function el(){if(!S)return 0;let t=S.res.reduce((s,r)=>s+(r.ms||0),0);if(!S.ans[S.i]&&S.qt0&&!S.away)t+=Date.now()-S.qt0;return t}
 function summary(){if(timerId){clearInterval(timerId);timerId=null}const by={};S.res.forEach(r=>bump(by[r.q.module]||(by[r.q.module]={n:0,c:0,tn:0,t:0}),r.ok,r.ms));
-const c=S.res.filter(r=>r.ok).length;app.innerHTML=`<div class="card" id="summary"><h3>${S.title}总结</h3><p>作答 ${S.res.length} 题，正确 ${c} 题，正确率 <b>${pct(c,S.res.length)}</b>，用时 ${fmt(el())}</p>
-${tbl("模块",by,MODS)}<button class="b" id="again">再练一次</button><button class="b r" id="tow">去错题本</button></div>`;$("#again").onclick=()=>go("practice");$("#tow").onclick=()=>go("wrong");S=null;nav()}
+const c=S.res.filter(r=>r.ok).length;const left=S.qs.length-S.res.length;app.innerHTML=`<div class="card" id="summary"><h3>${esc(S.title)}总结</h3><p>作答 ${S.res.length} 题${left?`（未作答 ${left} 题）`:""}，正确 ${c} 题，正确率 <b>${pct(c,S.res.length)}</b>，用时 ${fmt(el())}</p>
+${tbl("模块",by,MODS)}<button class="b" id="again">再练一次</button><button class="b r" id="tow">去错题本</button></div>`;$("#again").onclick=()=>go("practice");$("#tow").onclick=()=>go("wrong");S=null;saveS();nav()}
 // ---- 错题本
 const dt=s=>{const d=new Date(s);return isNaN(d)?String(s||""):d.toLocaleString("zh-CN")};
 function vWrong(){const ids=Object.keys(wrong).filter(id=>bank.some(x=>x.id==id));
 app.innerHTML=`<div class="card"><p>共 ${ids.length} 道错题。连续答对 2 次自动移出。</p><button class="b" id="redo" ${ids.length?"":"disabled"}>重做错题</button><button class="b r" id="clr">清空错题本</button><button class="b g" id="wfexp">导出错题+收藏</button></div>`+ids.map(id=>{const q=bank.find(x=>x.id==id),w=wrong[id];return `<div class="card wq">${tags(q)}
 <div class="muted">${esc(q.source||"")}<br>错 ${w.count} 次 · 最近错误：${esc(dt(w.last))} · 连对 ${w.streak||0}</div>${matHTML(q)}${q.image?`<img class="qimg" src="${esc(q.image)}" alt="题目图片" loading="lazy">`:""}<p class="stem">${esc(reflow(q.stem||""))}</p><p>答案：<b>${esc(q.answer)}</b>${String(q.answer||"").length==1?" "+esc((q.options||{})[q.answer]||""):""}</p>
-<details><summary>解析</summary><div class="exp">${esc(reflow(q.explanation))}</div></details><button class="b ok" data-m="${esc(id)}">已掌握</button></div>`}).join("");
+<details><summary>解析</summary>${expHTML(q.explanation)}</details><button class="b ok" data-m="${esc(id)}">已掌握</button></div>`}).join("");
 $("#wfexp").onclick=exportWF;$("#redo").onclick=()=>start(shuffle(ids.map(id=>bank.find(x=>x.id==id))),true,"错题重做");
 $("#clr").onclick=()=>{if(confirm("确定清空错题本？")){wrong={};sv(K.wrong,wrong);go("wrong")}};
 $$("[data-m]").forEach(b=>b.onclick=()=>{delete wrong[b.dataset.m];sv(K.wrong,wrong);go("wrong")})}
@@ -326,7 +411,7 @@ dl(`xingce-错题收藏-${ts}.json`,JSON.stringify({kind:"xingce-wrong-fav",vers
 function vFav(){const ids=Object.keys(fav).filter(id=>bank.some(x=>x.id==id)).sort((a,b)=>(fav[b]||"").localeCompare(fav[a]||""));
 app.innerHTML=`<div class="card"><p>共 ${ids.length} 道收藏题。</p><button class="b" id="favredo" ${ids.length?"":"disabled"}>练习收藏题</button><button class="b r" id="favclr" ${ids.length?"":"disabled"}>清空收藏</button><button class="b g" id="wfexp">导出错题+收藏</button></div>`+ids.map(id=>{const q=bank.find(x=>x.id==id);return `<div class="card wq">${tags(q)}
 <div class="muted">${esc(q.source||"")}<br>收藏于：${esc(dt(fav[id]))}</div>${matHTML(q)}${q.image?`<img class="qimg" src="${esc(q.image)}" alt="题目图片" loading="lazy">`:""}<p class="stem">${esc(reflow(q.stem||""))}</p>${optKeys(q).map(k=>`<div>${k}. ${esc(q.image&&q.options[k]===k?"":q.options[k]||"")}</div>`).join("")}
-<details><summary>答案与解析</summary><p>答案：<b>${q.answer}</b></p><div class="exp">${esc(reflow(q.explanation||""))}</div></details><button class="b r" data-unfav="${esc(id)}">取消收藏</button></div>`}).join("");
+<details><summary>答案与解析</summary><p>答案：<b>${q.answer}</b></p>${expHTML(q.explanation)}</details><button class="b r" data-unfav="${esc(id)}">取消收藏</button></div>`}).join("");
 $("#wfexp").onclick=exportWF;$("#favredo").onclick=()=>start(shuffle(ids.map(id=>bank.find(x=>x.id==id))),true,"收藏练习");
 $("#favclr").onclick=()=>{if(confirm("确定清空收藏？")){fav={};sv(K.fav,fav);go("fav")}};
 $$("[data-unfav]").forEach(b=>b.onclick=()=>{delete fav[b.dataset.unfav];sv(K.fav,fav);go("fav")})}
@@ -355,5 +440,5 @@ material_id(资料分析共用材料 ID，可空), appearances(可选：同题�
 <p class="muted">默认题库由 import_from_repo.py 从 xingce-prep 仓库导入：真题来自 真题/ocr/tiku.json（答案为机构整理/网友回忆，非官方），模拟题来自 练习/ 下的自编题。题库支持跨试卷按模块/题型/子类筛选；练习页可开「标注」手写笔记（关掉即清空）。题型部分来自仓库 subtype，其余按题干识别，可在编辑中修改。</p></div>`;
 $("#rsd").onclick=()=>{if(confirm("恢复为内置默认题库？你对题库的修改会丢失（错题本和统计保留）。")){setMode("base");go("bank")}};
 $("#rsb").onclick=()=>{if(confirm("将用 10 道示例题替换当前题库（之后可点“恢复默认题库”恢复）？")){setMode("custom",bundle(clone(SEED)));go("bank")}}}
-go("bank");
+loadS();go("bank");if(S)toast("有未完成的刷题，点上方「▶ 继续刷题」回去");
 </script></body></html>
