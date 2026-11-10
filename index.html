@@ -51,7 +51,11 @@ button.b.onann{background:#b35c00}
 nav button.resume{background:#f39c12;color:#fff;font-weight:700}nav button.resume.on{background:#fff;color:#e67e22}
 .resume-card{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;background:#fff7e6;border:1px solid #f5c26b}
 #toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#000c;color:#fff;padding:8px 16px;border-radius:20px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:99;max-width:90vw;text-align:center}#toast.show{opacity:1}
-.chip .cn{margin-left:5px;font-size:11px;opacity:.7}.ynote{font-size:12px;color:#999;margin:-2px 0 6px}
+.chip .cn{margin-left:5px;font-size:11px;opacity:.7}
+.yr{display:flex;align-items:center;gap:8px;margin:6px 0}.yr select{flex:1;min-width:0;font-size:16px;padding:8px}
+.grp{padding:0;overflow:hidden}.ghead{display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding:8px 10px}.gtog{flex:1 1 150px;display:flex;align-items:center;gap:8px;background:none;border:0;padding:8px 2px;font-size:16px;font-weight:700;color:#1e3a6e;text-align:left;cursor:pointer;min-height:44px}
+.gar{width:14px;color:#1e5bb8}.gt{flex:1;line-height:1.25}.gt small{display:block;font-size:12px;font-weight:400;color:#777}.gn{font-size:13px;font-weight:600;color:#fff;background:#1e5bb8;border-radius:999px;padding:2px 9px}.gact{display:flex;gap:2px}.gact .b{margin:0 0 0 4px;padding:8px 12px}
+.grp.open .ghead{border-bottom:1px solid #e8ecf2;background:#f7f9fd}.gbody{padding:4px 10px 6px}.grp .wq{box-shadow:none;border:1px solid #e3e7ee;margin:10px 0;padding:12px}.ynote{font-size:12px;color:#999;margin:-2px 0 6px}
 .res{border-radius:10px;padding:10px 14px;margin:14px 0 10px;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px}.res.ok{background:#e3f8e8;color:#1e8e4a}.res.bad{background:#fde8e8;color:#c0392b}
 .res .rt{font-weight:700;font-size:18px}.res .rd{color:#333;font-size:15px}.res .rd b{font-size:19px}.res.ok .rd b,.res .rd b.ans{color:#1e8e4a}.res .rd b.mine{color:#c0392b}
 .xcard{background:#fffdf5;border:1px solid #f0e2b6;border-radius:12px;padding:12px 14px;margin:8px 0}
@@ -84,6 +88,28 @@ const MODS=["常识判断","言语理解与表达","数量关系","判断推理"
 const TYPES=["真题","模拟题","示例题","自定义"];
 let TAX={};try{TAX=(JSON.parse(document.getElementById("base-data").textContent).taxonomy)||{}}catch(e){TAX={}}
 if(!Object.keys(TAX).length)TAX={"常识判断":[{qtype:"时政",qsubtypes:["单选","多选","判断"]},{qtype:"政治",qsubtypes:[]},{qtype:"常识",qsubtypes:["经济","法律","历史","地理","科技","人文","生活常识/其他"]}],"言语理解与表达":[{qtype:"逻辑填空",qsubtypes:[]},{qtype:"片段阅读",qsubtypes:["中心理解","细节判断","标题填入","语句排序","语句填空","下文推断"]},{qtype:"语句表达",qsubtypes:[]}],"数量关系":[{qtype:"数学运算",qsubtypes:["行程","工程","经济利润","排列组合与概率","几何","容斥","年龄/和差倍比","最值/抽屉","其他"]},{qtype:"数字推理",qsubtypes:[]}],"判断推理":[{qtype:"图形推理",qsubtypes:[]},{qtype:"定义判断",qsubtypes:[]},{qtype:"类比推理",qsubtypes:[]},{qtype:"逻辑判断",qsubtypes:["翻译推理","真假推理","分析推理","加强削弱","原因解释","归纳推理"]}],"资料分析":[{qtype:"资料分析",qsubtypes:["增长类","比重类","平均数类","倍数类","综合分析","其他计算"]}]};
+// 常识判断：“时政”“政治”合并为“政治理论”；其中的一般常识题归入“常识”（只在前端映射，不改内嵌题库）
+const PT="政治理论",PT_OLD=["时政","政治"];
+(function(){const a=TAX["常识判断"];if(!a)return;const subs=[];a.forEach(x=>{if(PT_OLD.includes(x.qtype)||x.qtype===PT)(x.qsubtypes||[]).forEach(s=>{if(!subs.includes(s))subs.push(s)})});
+ TAX["常识判断"]=[{qtype:PT,qsubtypes:subs}].concat(a.filter(x=>!PT_OLD.includes(x.qtype)&&x.qtype!==PT))})();
+// 判定规则：①解析“本题考查…”写明历史/生物/经济常识等且不是时政/党政 → 常识；②无此说明时，题干无时政/党政标记且命中常识关键词 → 常识；③个别题按 ID 指定
+const GK_POL=/习近平|总书记|党|中央|国务院|全会|二十大|十九大|十五五|十四五|新时代|中国特色|社会主义|马克思|毛泽东|邓小平|思想|人大|政协|两会|政府工作报告|一号文件|乡村振兴|共同富裕|新质生产力|改革|主席|总理|规划|会议|论坛|峰会|外交|政策|措施|部署|意见|方案|战略|纲要|举措|建设|治理|国家安全|法治|依法治国|高质量发展|现代化|强国|政府|新中国|抗战|抗日|长征|红军|革命|周年|\d{4}\s*年\s*\d{1,2}\s*月|今年|近日|近期|日前|首次|发布|印发|实施|施行|出台|审议|通过|签署|条例|办法|规定|修订|三农|楷模/;
+const GK_HARD=/习近平|总书记|党|中央|国务院|\d{4}\s*年\s*\d{1,2}\s*月|本次|近日/;
+const GK_HEAD_POL=/时政|时事|热点|政治|党|中央|外交|会议|讲话|领导人|理论|思想|全会|规划|文件|新法|条例|强国|开放|创新|治理|民生|安全|民主|经济工作|对立统一|规律|哲学|干部|规则|国情|成就知识/;
+const GK_HEAD=[["历史",/历史|史学|古代/],["科技",/生物|物理|化学|天文|科技|科学/],["地理",/地理/],["经济",/经济常识|经济学|金融常识/],["法律",/法律常识|法理|民法|刑法|宪法/],["人文",/文学|文化常识|人文|艺术/],["生活常识/其他",/管理常识|生活常识|军事常识/]];
+const GK_KW=[["法律",/宪法|民法典|刑法|诉讼|合同|继承|监护|物权|侵权|犯罪|罪名|正义|法律内涵/],
+ ["经济",/通货膨胀|通货紧缩|国内生产总值|边际|弹性|利率|汇率|股票|债券|资产负债|恩格尔|基尼|商业银行/],
+ ["历史",/朝代|唐代|宋代|元代|明代|清代|汉代|秦朝|隋朝|魏晋|三国|春秋|战国|古代|皇帝|历史人物|变法|辛亥|五四运动|鸦片战争|冷战/],
+ ["地理",/气候|季风|河流|山脉|海峡|经度|纬度|时区|时差|地形|板块|火山|地震|沙漠|冰川|盆地|高原|洋流|半岛|湖泊|降水/],
+ ["科技",/物理|化学|生物|细胞|基因|元素|分子|原子|光年|行星|恒星|天文|月球|太阳系|病毒|细菌|维生素|蛋白质|光合|电磁|导体|导电|气压|摩擦|惯性|波长|折射|反射|激光|人工智能|算法|程序/],
+ ["人文",/诗句|诗词|成语|典故|书法|绘画|戏曲|京剧|昆曲|节气|民俗|小说|文学|名著|乐器|学派|儒家|道家|法家|墨家/],
+ ["生活常识/其他",/生活常识|急救|消防|安全常识|烹饪|营养/]];
+const GK_ID={"fs2017-13":"科技"};
+function gkClass(q){if(GK_ID[q.id])return GK_ID[q.id];const s=q.stem||"";const m=String(q.explanation||"").match(/考[查察]([^。，,；;\n]{1,30})/);
+ if(m){const h=m[1];if(GK_HEAD_POL.test(h))return null;for(const [n,re] of GK_HEAD)if(re.test(h))return n==="科技"&&GK_HARD.test(s)?null:n;return null}
+ if(GK_POL.test(s))return null;const t=s+" "+Object.values(q.options||{}).join(" ");for(const [n,re] of GK_KW)if(re.test(t))return n;return null}
+function mapQtype(q){if(q.module!=="常识判断"||!PT_OLD.includes(q.qtype))return q;const g=q.qtype_src==="manual"||q.qsubtype==="多选"?null:gkClass(q);
+ if(g){q.qtype="常识";q.qsubtype=g}else q.qtype=PT;return q}
 const qtypesOf=m=>(TAX[m]||[]).map(x=>x.qtype);
 const qsubsOf=(m,t)=>((TAX[m]||[]).find(x=>x.qtype===t)||{qsubtypes:[]}).qsubtypes;
 const K={bank:"xc_bank",wrong:"xc_wrong",stats:"xc_stats2",done:"xc_done",skip:"xc_skipdone",fav:"xc_fav"};
@@ -101,7 +127,7 @@ function fix(q){q=Object.assign({year:null,exam:null,difficulty:null,qtype:null,
  if(q.difficulty!==null&&q.difficulty!==""&&q.difficulty!==undefined){q.difficulty=parseInt(q.difficulty);if(isNaN(q.difficulty))q.difficulty=null}else q.difficulty=null;
  ["exam","qtype","qsubtype","qtype_src","material_id"].forEach(k=>{if(q[k]==="")q[k]=null});
  if(!q.type)q.type=/^示例题/.test(q.source||"")?"示例题":/^模拟题/.test(q.source||"")?"模拟题":/^真题/.test(q.source||"")?"真题":"自定义";
- if(!q.exam&&(q.type==="模拟题"||q.type==="示例题"))q.exam=q.type;return q}
+ if(!q.exam&&(q.type==="模拟题"||q.type==="示例题"))q.exam=q.type;return mapQtype(q)}
 function bundle(x){if(Array.isArray(x))return{materials:{},questions:x.map(fix)};x=x||{};return{materials:x.materials||{},questions:(x.questions||[]).map(fix)}}
 // 默认题库内嵌；localStorage 只存改动覆盖层
 let BASE;try{BASE=bundle(JSON.parse(document.getElementById("base-data").textContent))}catch(e){BASE=bundle([])}
@@ -123,7 +149,8 @@ function setMode(m,b){sv("xc_mode",m);localStorage.removeItem("xc_overlay");loca
 loadBank();
 let wrong=ld(K.wrong,{});
 // 统计：{mod:{模块:{n,c,tn,t}}, qt:{题型:{...}}}，t 为累计用时(ms)，tn 为有计时的作答数
-let stats=ld(K.stats,null);if(!stats){stats={mod:{},qt:{},st:{}};const old=ld("xc_stats",{});Object.keys(old).forEach(m=>stats.mod[m]={n:old[m].n,c:old[m].c,tn:0,t:0});sv(K.stats,stats)}if(!stats.st)stats.st={};
+let stats=ld(K.stats,null);if(!stats){stats={mod:{},qt:{},st:{}};const old=ld("xc_stats",{});Object.keys(old).forEach(m=>stats.mod[m]={n:old[m].n,c:old[m].c,tn:0,t:0});sv(K.stats,stats)}if(!stats.st)stats.st={};if(!stats.qt)stats.qt={};
+if(PT_OLD.some(k=>stats.qt[k])){PT_OLD.forEach(k=>{const o=stats.qt[k];if(!o)return;const t=stats.qt[PT]||(stats.qt[PT]={n:0,c:0,tn:0,t:0});["n","c","tn","t"].forEach(f=>t[f]=(t[f]||0)+(o[f]||0));delete stats.qt[k]});sv(K.stats,stats)}
 const TABS=[["bank","题库"],["practice","练习"],["wrong","错题本"],["fav","收藏"],["stats","统计"]];
 let cur="bank",timerId=null;
 function nav(){$("#nav").innerHTML=TABS.map(([k,n])=>`<button data-t="${k}" class="${k==cur?"on":""}">${n}${k=="wrong"?"("+Object.keys(wrong).length+")":k=="fav"?"("+Object.keys(fav).length+")":""}</button>`).join("")+(S?`<button data-t="quiz" class="resume ${cur==="quiz"?"on":""}">${cur==="quiz"?"✎ 刷题中":"▶ 继续刷题"} ${S.i+1}/${S.qs.length}</button>`:"");$$("#nav button").forEach(b=>b.onclick=()=>go(b.dataset.t))}
@@ -248,7 +275,7 @@ ok.forEach(o=>{const i=bank.findIndex(x=>x.id==o.id);i>=0?bank[i]=o:bank.push(o)
 const miss=ok.filter(o=>o.material_id&&mats[o.material_id]===undefined).length;
 alert(`导入成功 ${ok.length} 题${bad?`，跳过无效 ${bad} 行`:""}${miss?`；${miss} 题引用的材料不存在，请再导入材料 CSV`:""}`);go("bank")}
 // ---- 练习
-let pf={m:"",t:"",e:"",qt:"",qs:"",qts:[],d:"",y1:null,y2:null,ys:[]},S=null;
+let pf={m:"",t:"",e:"",qt:"",qs:"",qts:[],d:"",y1:null,y2:null,ya:"",yb:""},S=null;
 const yKey=x=>x.year==null?"未标":String(x.year);
 function vPractice(){
 app.innerHTML=`${S?`<div class="card resume-card"><div><b>有未完成的刷题</b><div class="muted">${esc(S.title)} · 第 ${S.i+1}/${S.qs.length} 题 · 已答 ${Object.keys(S.ans).length} 题</div></div><div><button class="b ok" id="resume" type="button">继续刷题</button><button class="b g" id="drop" type="button">放弃</button></div></div>`:""}<div class="card"><h3>开始练习</h3>
@@ -271,16 +298,23 @@ function renderQts(){const mods=pMods();const checked=new Set(pf.qts||[]);
  renderSub()}
 function renderSub(){$("#pSubRow").innerHTML=subSelectHTML(pMods(),pf.qts,pf.qs);if($("#subSel"))$("#subSel").onchange=()=>{pf.qs=$("#subSel").value;renderYears();updCount()};renderYears()}
 function readP(){pf.t="";pf.e="";pf.d=$("#pd").value;pf.y1=null;pf.y2=null;pf.qs=($("#subSel")&&$("#subSel").value)||"";pf.qt="";pf.qts=$$("#pQts .chip.on").map(x=>x.dataset.qt);pf.m=""}
-// 常识判断（时政/政治/常识）年份：只作用于常识判断模块，其他模块不受影响
+// 常识判断（政治理论/常识）年份范围：只作用于常识判断模块，其他模块不受影响
 function yearBase(){readP();if(!pMods().includes("常识判断"))return[];const f=Object.assign({},pf,{m:""});return bank.filter(x=>!x.exclude_practice&&x.module==="常识判断"&&match(x,f))}
-function yearOK(x){return x.module!=="常识判断"||!pf.ys.length||pf.ys.includes(yKey(x))}
+function yRange(){let a=pf.ya?+pf.ya:null,b=pf.yb?+pf.yb:null;if(a!==null&&b!==null&&a>b){const t=a;a=b;b=t}return[a,b]}
+function yearOK(x){if(x.module!=="常识判断")return true;const [a,b]=yRange();if(a===null&&b===null)return true;if(x.year==null)return false;return(a===null||x.year>=a)&&(b===null||x.year<=b)}
+function yLabel(){const [a,b]=yRange();return a===null&&b===null?"":a!==null&&b!==null?(a===b?a+" 年":a+"–"+b+" 年"):a!==null?a+" 年及以后":b+" 年及以前"}
 function renderYears(){const box=$("#pYearBox");const base=yearBase();if(!base.length){box.innerHTML="";return}
- const cnt={};base.forEach(x=>{const y=yKey(x);cnt[y]=(cnt[y]||0)+1});const ys=Object.keys(cnt).sort((a,b)=>a==="未标"?1:b==="未标"?-1:b-a);pf.ys=(pf.ys||[]).filter(y=>cnt[y]);
- const selT=pf.qts.filter(t=>qtypesOf("常识判断").includes(t));const lab=selT.length?selT.join("/"):"时政/常识（常识判断）";
- box.innerHTML=`<div class="muted">${esc(lab)} 年份（可多选，不选=全部年份）</div><div class="chips" id="pYears"><button type="button" class="chip ${pf.ys.length?"":"on"}" data-y="">全部年份</button>${ys.map(y=>`<button type="button" class="chip ${pf.ys.includes(y)?"on":""}" data-y="${esc(y)}">${y==="未标"?"未标年份":esc(y)+" 年"}<span class="cn">${cnt[y]}</span></button>`).join("")}</div><div class="ynote">真题按考试年份；时政月度模拟题按所属年份。只筛常识判断，其他模块不受影响。</div>`;
- $$("#pYears .chip").forEach(c=>c.onclick=()=>{const y=c.dataset.y;if(!y)pf.ys=[];else{const s=new Set(pf.ys);s.has(y)?s.delete(y):s.add(y);pf.ys=[...s]}$$("#pYears .chip").forEach(x=>x.classList.toggle("on",x.dataset.y?pf.ys.includes(x.dataset.y):!pf.ys.length));updCount()})}
+ const cnt={};let none=0;base.forEach(x=>{if(x.year==null)none++;else cnt[x.year]=(cnt[x.year]||0)+1});
+ const ys=[...new Set(Object.keys(cnt).concat([pf.ya,pf.yb].filter(Boolean)))].map(Number).sort((a,b)=>b-a);const mx=ys.length?ys[0]:null;
+ const selT=pf.qts.filter(t=>qtypesOf("常识判断").includes(t));const lab=selT.length?selT.join("/"):"常识判断（政治理论/常识）";
+ const op=(cur,ph)=>`<option value="">${ph}</option>`+ys.map(y=>`<option value="${y}" ${String(y)===String(cur)?"selected":""}>${y} 年（${cnt[y]||0} 题）</option>`).join("");
+ const [a,b]=yRange();const pre=[["","全部年份"]].concat(mx?[[1,"近1年"],[3,"近3年"],[5,"近5年"]]:[]);
+ const preOn=n=>n===""?(a===null&&b===null):(b===mx&&a===mx-n+1);
+ box.innerHTML=`<div class="muted">${esc(lab)} 年份范围（不选=全部年份）</div><div class="yr"><select id="pYa" aria-label="起始年份">${op(pf.ya,"最早")}</select><span>至</span><select id="pYb" aria-label="结束年份">${op(pf.yb,"最新")}</select></div><div class="chips" id="pYq">${pre.map(([n,t])=>`<button type="button" class="chip ${preOn(n)?"on":""}" data-r="${n}">${t}</button>`).join("")}</div><div class="ynote">真题按考试年份；时政月度模拟题按所属年份。只筛常识判断，其他模块不受影响${none?`；设了范围时不含未标年份的 ${none} 题`:""}。</div>`;
+ $("#pYa").onchange=()=>{pf.ya=$("#pYa").value;renderYears();updCount()};$("#pYb").onchange=()=>{pf.yb=$("#pYb").value;renderYears();updCount()};
+ $$("#pYq .chip").forEach(c=>c.onclick=()=>{const n=c.dataset.r;if(!n){pf.ya="";pf.yb=""}else{pf.yb=String(mx);pf.ya=String(mx-(+n)+1)}renderYears();updCount()})}
 function pool(){readP();const ms=pMods();const f=Object.assign({},pf,{m:""});return bank.filter(x=>!x.exclude_practice&&ms.includes(x.module)&&match(x,f)&&yearOK(x))}
-function updCount(){$("#pcnt").textContent=`符合条件 ${pool().length} 题（跨全部试卷）`+(pf.ys.length?`；常识判断限 ${pf.ys.map(y=>y==="未标"?"未标年份":y).join("、")} 年`:"")}
+function updCount(){$("#pcnt").textContent=`符合条件 ${pool().length} 题（跨全部试卷）`+(yLabel()?`；常识判断限 ${yLabel()}`:"")}
 $$("#pMods .chip").forEach(c=>c.onclick=()=>{c.classList.toggle("on");if(!pMods().length)c.classList.add("on");pf.qts=[];renderQts();updCount()});
 $("#pd").onchange=()=>{renderYears();updCount()};
 renderQts();updCount();
@@ -395,26 +429,51 @@ const c=S.res.filter(r=>r.ok).length;const left=S.qs.length-S.res.length;app.inn
 ${tbl("模块",by,MODS)}<button class="b" id="again">再练一次</button><button class="b r" id="tow">去错题本</button></div>`;$("#again").onclick=()=>go("practice");$("#tow").onclick=()=>go("wrong");S=null;saveS();nav()}
 // ---- 错题本
 const dt=s=>{const d=new Date(s);return isNaN(d)?String(s||""):d.toLocaleString("zh-CN")};
-function vWrong(){const ids=Object.keys(wrong).filter(id=>bank.some(x=>x.id==id));
-app.innerHTML=`<div class="card"><p>共 ${ids.length} 道错题。连续答对 2 次自动移出。</p><button class="b" id="redo" ${ids.length?"":"disabled"}>重做错题</button><button class="b r" id="clr">清空错题本</button><button class="b g" id="wfexp">导出错题+收藏</button></div>`+ids.map(id=>{const q=bank.find(x=>x.id==id),w=wrong[id];return `<div class="card wq">${tags(q)}
+// 错题本 / 收藏：按「模块 · 题型」分组，每组可单独导出、单独练习
+const GOPEN={wrong:new Set(),fav:new Set()};
+const qtKey=q=>(q.module||"")+"|"+(q.qtype||"");
+const qtLabel=q=>q.qtype?(q.qtype===q.module?q.qtype:q.module+" · "+q.qtype):(q.module||"未知模块")+" · 未分类";
+function groupByQt(qs){const g=new Map();qs.forEach(q=>{const k=qtKey(q);if(!g.has(k))g.set(k,{key:k,label:qtLabel(q),module:q.module,qtype:q.qtype||null,qs:[]});g.get(k).qs.push(q)});
+ const mi=m=>{const i=MODS.indexOf(m);return i<0?99:i},ti=(m,t)=>{if(!t)return 98;const i=qtypesOf(m).indexOf(t);return i<0?97:i};
+ return [...g.values()].sort((a,b)=>mi(a.module)-mi(b.module)||ti(a.module,a.qtype)-ti(b.module,b.qtype)||a.label.localeCompare(b.label))}
+function grpHTML(kind,groups,cardFn){if(groups.length===1)GOPEN[kind].add(groups[0].key);
+ return groups.map(g=>{const op=GOPEN[kind].has(g.key);return `<div class="card grp ${op?"open":""}" data-g="${esc(g.key)}"><div class="ghead"><button type="button" class="gtog" data-gt="${esc(g.key)}" aria-expanded="${op}"><span class="gar">${op?"▾":"▸"}</span><span class="gt">${g.qtype&&g.qtype!==g.module?`<small>${esc(g.module)}</small>`:""}${esc(g.qtype&&g.qtype!==g.module?g.qtype:g.label)}</span><span class="gn">${g.qs.length} 题</span></button><div class="gact"><button class="b" type="button" data-gp="${esc(g.key)}" aria-label="练习本类">练习</button><button class="b g" type="button" data-gx="${esc(g.key)}" aria-label="导出本类">导出</button></div></div><div class="gbody ${op?"":"hide"}">${op?g.qs.map(cardFn).join(""):""}</div></div>`}).join("")}
+function bindGroups(kind,groups,title){const G=new Map(groups.map(g=>[g.key,g]));
+ $$("[data-gt]").forEach(b=>b.onclick=()=>{const k=b.dataset.gt;GOPEN[kind].has(k)?GOPEN[kind].delete(k):GOPEN[kind].add(k);go(kind)});
+ $$("[data-gx]").forEach(b=>b.onclick=()=>exportGroup(kind,G.get(b.dataset.gx)));
+ $$("[data-gp]").forEach(b=>b.onclick=()=>{const g=G.get(b.dataset.gp);start(shuffle(g.qs),true,title+"·"+g.label)});
+ const ta=$("#gall");if(ta)ta.onclick=()=>{const all=groups.every(g=>GOPEN[kind].has(g.key));groups.forEach(g=>all?GOPEN[kind].delete(g.key):GOPEN[kind].add(g.key));go(kind)}}
+const allTog=(kind,groups)=>groups.length>1?`<button class="b g" id="gall" type="button">${groups.every(g=>GOPEN[kind].has(g.key))?"全部收起":"全部展开"}</button>`:"";
+const grpIdx=groups=>groups.length?`<div class="muted" style="margin-top:6px">按题型：${groups.map(g=>esc(g.label)+" "+g.qs.length).join("；")}</div>`:"";
+function wCard(q){const id=q.id,w=wrong[id];return `<div class="card wq">${tags(q)}
 <div class="muted">${esc(q.source||"")}<br>错 ${w.count} 次 · 最近错误：${esc(dt(w.last))} · 连对 ${w.streak||0}</div>${matHTML(q)}${q.image?`<img class="qimg" src="${esc(q.image)}" alt="题目图片" loading="lazy">`:""}<p class="stem">${esc(reflow(q.stem||""))}</p><p>答案：<b>${esc(q.answer)}</b>${String(q.answer||"").length==1?" "+esc((q.options||{})[q.answer]||""):""}</p>
-<details><summary>解析</summary>${expHTML(q.explanation)}</details><button class="b ok" data-m="${esc(id)}">已掌握</button></div>`}).join("");
-$("#wfexp").onclick=exportWF;$("#redo").onclick=()=>start(shuffle(ids.map(id=>bank.find(x=>x.id==id))),true,"错题重做");
+<details><summary>解析</summary>${expHTML(q.explanation)}</details><button class="b ok" data-m="${esc(id)}">已掌握</button></div>`}
+function vWrong(){const M=new Map(bank.map(x=>[x.id,x]));const qs=Object.keys(wrong).filter(id=>M.has(id)).map(id=>M.get(id));const groups=groupByQt(qs);
+app.innerHTML=`<div class="card"><p>共 ${qs.length} 道错题，分 ${groups.length} 个题型。连续答对 2 次自动移出。</p><button class="b" id="redo" ${qs.length?"":"disabled"}>重做全部错题</button><button class="b r" id="clr">清空错题本</button><button class="b g" id="wfexp">导出错题+收藏</button>${allTog("wrong",groups)}${grpIdx(groups)}</div>`+grpHTML("wrong",groups,wCard);
+$("#wfexp").onclick=exportWF;$("#redo").onclick=()=>start(shuffle(qs),true,"错题重做");
 $("#clr").onclick=()=>{if(confirm("确定清空错题本？")){wrong={};sv(K.wrong,wrong);go("wrong")}};
-$$("[data-m]").forEach(b=>b.onclick=()=>{delete wrong[b.dataset.m];sv(K.wrong,wrong);go("wrong")})}
+$$("[data-m]").forEach(b=>b.onclick=()=>{delete wrong[b.dataset.m];sv(K.wrong,wrong);go("wrong")});bindGroups("wrong",groups,"错题重做")}
 // ---- 收藏
-function exportWF(){const pick=q=>({id:q.id,module:q.module,qtype:q.qtype||null,qsubtype:q.qsubtype||null,exam:q.exam||null,year:q.year??null,source:q.source||null,stem:q.stem||"",options:q.options,answer:q.answer,explanation:q.explanation||""});
-const W=Object.entries(wrong).map(([id,w])=>{const q=bank.find(x=>x.id==id);return q?Object.assign(pick(q),{wrong_count:w.count,streak:w.streak||0,last_wrong:w.last||null}):null}).filter(Boolean);
-const F=Object.entries(fav).map(([id,t])=>{const q=bank.find(x=>x.id==id);return q?Object.assign(pick(q),{favorited_at:t,in_wrong:!!wrong[id]}):null}).filter(Boolean);
-const d=new Date(),ts=d.getFullYear()+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0")+"-"+String(d.getHours()).padStart(2,"0")+String(d.getMinutes()).padStart(2,"0");
-dl(`xingce-错题收藏-${ts}.json`,JSON.stringify({kind:"xingce-wrong-fav",version:1,exported_at:d.toISOString(),wrong_total:W.length,fav_total:F.length,wrong:W,favorites:F},null,1),"application/json")}
-function vFav(){const ids=Object.keys(fav).filter(id=>bank.some(x=>x.id==id)).sort((a,b)=>(fav[b]||"").localeCompare(fav[a]||""));
-app.innerHTML=`<div class="card"><p>共 ${ids.length} 道收藏题。</p><button class="b" id="favredo" ${ids.length?"":"disabled"}>练习收藏题</button><button class="b r" id="favclr" ${ids.length?"":"disabled"}>清空收藏</button><button class="b g" id="wfexp">导出错题+收藏</button></div>`+ids.map(id=>{const q=bank.find(x=>x.id==id);return `<div class="card wq">${tags(q)}
+const wfPick=q=>({id:q.id,module:q.module,qtype:q.qtype||null,qsubtype:q.qsubtype||null,exam:q.exam||null,year:q.year??null,source:q.source||null,stem:q.stem||"",options:q.options,answer:q.answer,explanation:q.explanation||""});
+const wPick=q=>{const w=wrong[q.id];return Object.assign(wfPick(q),{wrong_count:w.count,streak:w.streak||0,last_wrong:w.last||null})};
+const fPick=q=>Object.assign(wfPick(q),{favorited_at:fav[q.id],in_wrong:!!wrong[q.id]});
+function tsNow(d){return d.getFullYear()+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0")+"-"+String(d.getHours()).padStart(2,"0")+String(d.getMinutes()).padStart(2,"0")}
+function exportWF(){const M=new Map(bank.map(x=>[x.id,x]));
+const W=Object.keys(wrong).filter(id=>M.has(id)).map(id=>wPick(M.get(id)));
+const F=Object.keys(fav).filter(id=>M.has(id)).map(id=>fPick(M.get(id)));
+const d=new Date();
+dl(`xingce-错题收藏-${tsNow(d)}.json`,JSON.stringify({kind:"xingce-wrong-fav",version:1,exported_at:d.toISOString(),wrong_total:W.length,fav_total:F.length,wrong:W,favorites:F},null,1),"application/json")}
+function exportGroup(kind,g){if(!g)return;const W=kind==="wrong";const items=g.qs.filter(q=>W?wrong[q.id]:fav[q.id]).map(W?wPick:fPick);const d=new Date();
+ const o={kind:W?"xingce-wrong":"xingce-fav",version:1,exported_at:d.toISOString(),module:g.module||null,qtype:g.qtype,label:g.label,total:items.length};o[W?"wrong":"favorites"]=items;
+ dl(`xingce-${W?"错题":"收藏"}-${g.label.replace(/[\s·/\\:*?"<>|]+/g,"-")}-${tsNow(d)}.json`,JSON.stringify(o,null,1),"application/json");toast(`已导出「${g.label}」${items.length} 题`)}
+function fCard(q){const id=q.id;return `<div class="card wq">${tags(q)}
 <div class="muted">${esc(q.source||"")}<br>收藏于：${esc(dt(fav[id]))}</div>${matHTML(q)}${q.image?`<img class="qimg" src="${esc(q.image)}" alt="题目图片" loading="lazy">`:""}<p class="stem">${esc(reflow(q.stem||""))}</p>${optKeys(q).map(k=>`<div>${k}. ${esc(q.image&&q.options[k]===k?"":q.options[k]||"")}</div>`).join("")}
-<details><summary>答案与解析</summary><p>答案：<b>${q.answer}</b></p>${expHTML(q.explanation)}</details><button class="b r" data-unfav="${esc(id)}">取消收藏</button></div>`}).join("");
-$("#wfexp").onclick=exportWF;$("#favredo").onclick=()=>start(shuffle(ids.map(id=>bank.find(x=>x.id==id))),true,"收藏练习");
+<details><summary>答案与解析</summary><p>答案：<b>${q.answer}</b></p>${expHTML(q.explanation)}</details><button class="b r" data-unfav="${esc(id)}">取消收藏</button></div>`}
+function vFav(){const M=new Map(bank.map(x=>[x.id,x]));const qs=Object.keys(fav).filter(id=>M.has(id)).sort((a,b)=>(fav[b]||"").localeCompare(fav[a]||"")).map(id=>M.get(id));const groups=groupByQt(qs);
+app.innerHTML=`<div class="card"><p>共 ${qs.length} 道收藏题，分 ${groups.length} 个题型。</p><button class="b" id="favredo" ${qs.length?"":"disabled"}>练习全部收藏</button><button class="b r" id="favclr" ${qs.length?"":"disabled"}>清空收藏</button><button class="b g" id="wfexp">导出错题+收藏</button>${allTog("fav",groups)}${grpIdx(groups)}</div>`+grpHTML("fav",groups,fCard);
+$("#wfexp").onclick=exportWF;$("#favredo").onclick=()=>start(shuffle(qs),true,"收藏练习");
 $("#favclr").onclick=()=>{if(confirm("确定清空收藏？")){fav={};sv(K.fav,fav);go("fav")}};
-$$("[data-unfav]").forEach(b=>b.onclick=()=>{delete fav[b.dataset.unfav];sv(K.fav,fav);go("fav")})}
+$$("[data-unfav]").forEach(b=>b.onclick=()=>{delete fav[b.dataset.unfav];sv(K.fav,fav);go("fav")});bindGroups("fav",groups,"收藏练习")}
 // ---- 统计
 function wrongList(){return Object.entries(wrong).map(([id,w])=>{const q=bank.find(x=>x.id==id)||{};return{id,module:q.module??null,qtype:q.qtype??null,qsubtype:q.qsubtype??null,exam:q.exam??null,year:q.year??null,wrong_count:w.count,last_wrong:w.last}})}
 function statRows(obj){return Object.entries(obj).map(([k,o])=>({name:k,answered:o.n,correct:o.c,accuracy:o.n?+(o.c/o.n).toFixed(4):null,avg_time_sec:avg(o)==null?null:+(avg(o)/1000).toFixed(1)}))}
