@@ -276,7 +276,7 @@ ok.forEach(o=>{const i=bank.findIndex(x=>x.id==o.id);i>=0?bank[i]=o:bank.push(o)
 const miss=ok.filter(o=>o.material_id&&mats[o.material_id]===undefined).length;
 alert(`导入成功 ${ok.length} 题${bad?`，跳过无效 ${bad} 行`:""}${miss?`；${miss} 题引用的材料不存在，请再导入材料 CSV`:""}`);go("bank")}
 // ---- 练习
-let pf={m:"",t:"",e:"",qt:"",qs:"",qts:[],d:"",y1:null,y2:null,ya:"",yb:""},S=null;
+let pf={m:"",t:"",e:"",qt:"",qs:"",qts:[],d:"",y1:null,y2:null,ya:"",yb:"",yu:false},S=null;
 const yKey=x=>x.year==null?"未标":String(x.year);
 function vPractice(){
 app.innerHTML=`${S?`<div class="card resume-card"><div><b>有未完成的刷题</b><div class="muted">${esc(S.title)} · 第 ${S.i+1}/${S.qs.length} 题 · 已答 ${Object.keys(S.ans).length} 题</div></div><div><button class="b ok" id="resume" type="button">继续刷题</button><button class="b g" id="drop" type="button">放弃</button></div></div>`:""}<div class="card"><h3>开始练习</h3>
@@ -299,23 +299,28 @@ function renderQts(){const mods=pMods();const checked=new Set(pf.qts||[]);
  renderSub()}
 function renderSub(){$("#pSubRow").innerHTML=subSelectHTML(pMods(),pf.qts,pf.qs);if($("#subSel"))$("#subSel").onchange=()=>{pf.qs=$("#subSel").value;renderYears();updCount()};renderYears()}
 function readP(){pf.t="";pf.e="";pf.d=$("#pd").value;pf.y1=null;pf.y2=null;pf.qs=($("#subSel")&&$("#subSel").value)||"";pf.qt="";pf.qts=$$("#pQts .chip.on").map(x=>x.dataset.qt);pf.m=""}
-// 常识判断（政治理论/常识）年份范围：只作用于常识判断模块，其他模块不受影响
-function yearBase(){readP();if(!pMods().includes("常识判断"))return[];const f=Object.assign({},pf,{m:""});return bank.filter(x=>!x.exclude_practice&&x.module==="常识判断"&&match(x,f))}
+// 年份范围：按当前已选模块/题型中实际存在的年份生成，作用于全部已选范围
+function yearBase(){readP();const ms=pMods();if(!ms.length)return[];const f=Object.assign({},pf,{m:""});return bank.filter(x=>!x.exclude_practice&&ms.includes(x.module)&&match(x,f))}
 function yRange(){let a=pf.ya?+pf.ya:null,b=pf.yb?+pf.yb:null;if(a!==null&&b!==null&&a>b){const t=a;a=b;b=t}return[a,b]}
-function yearOK(x){if(x.module!=="常识判断")return true;const [a,b]=yRange();if(a===null&&b===null)return true;if(x.year==null)return false;return(a===null||x.year>=a)&&(b===null||x.year<=b)}
-function yLabel(){const [a,b]=yRange();return a===null&&b===null?"":a!==null&&b!==null?(a===b?a+" 年":a+"–"+b+" 年"):a!==null?a+" 年及以后":b+" 年及以前"}
+function yearOK(x){if(pf.yu)return x.year==null;const [a,b]=yRange();if(a===null&&b===null)return true;if(x.year==null)return false;return(a===null||x.year>=a)&&(b===null||x.year<=b)}
+function yLabel(){if(pf.yu)return"未标注年份";const [a,b]=yRange();return a===null&&b===null?"":a!==null&&b!==null?(a===b?a+" 年":a+"–"+b+" 年"):a!==null?a+" 年及以后":b+" 年及以前"}
+function yScopeLab(ms){const selT=(pf.qts||[]).filter(t=>ms.some(m=>qtypesOf(m).includes(t)));if(selT.length)return selT.join("/");if(ms.length===1)return ms[0];if(ms.length===MODS.length)return"全部模块";return ms.join("/")}
 function renderYears(){const box=$("#pYearBox");const base=yearBase();if(!base.length){box.innerHTML="";return}
  const cnt={};let none=0;base.forEach(x=>{if(x.year==null)none++;else cnt[x.year]=(cnt[x.year]||0)+1});
- const ys=[...new Set(Object.keys(cnt).concat([pf.ya,pf.yb].filter(Boolean)))].map(Number).sort((a,b)=>b-a);const mx=ys.length?ys[0]:null;
- const selT=pf.qts.filter(t=>qtypesOf("常识判断").includes(t));const lab=selT.length?selT.join("/"):"常识判断（政治理论/常识）";
- const op=(cur,ph)=>`<option value="">${ph}</option>`+ys.map(y=>`<option value="${y}" ${String(y)===String(cur)?"selected":""}>${y} 年（${cnt[y]||0} 题）</option>`).join("");
+ if(!none&&pf.yu)pf.yu=false;
+ const ys=Object.keys(cnt).map(Number).sort((a,b)=>b-a);const mx=ys.length?ys[0]:null;
+ const lab=yScopeLab(pMods());
+ if(!ys.length){box.innerHTML=`<div class="muted">${esc(lab)} 暂无标注年份</div><div class="ynote">当前范围内的题目没有考试年份，已全部计入可练习题，不按年份筛选。</div>`;return}
+ const ysAll=ys.concat([pf.ya,pf.yb].filter(y=>y&&!cnt[+y]).map(Number));
+ const op=(cur,ph)=>`<option value="">${ph}</option>`+ysAll.map(y=>`<option value="${y}" ${String(y)===String(cur)?"selected":""}>${y} 年（${cnt[y]||0} 题）</option>`).join("");
  const [a,b]=yRange();const pre=[["","全部年份"]].concat(mx?[[1,"近1年"],[3,"近3年"],[5,"近5年"]]:[]);
- const preOn=n=>n===""?(a===null&&b===null):(b===mx&&a===mx-n+1);
- box.innerHTML=`<div class="muted">${esc(lab)} 年份范围（不选=全部年份）</div><div class="yr"><select id="pYa" aria-label="起始年份">${op(pf.ya,"最早")}</select><span>至</span><select id="pYb" aria-label="结束年份">${op(pf.yb,"最新")}</select></div><div class="chips" id="pYq">${pre.map(([n,t])=>`<button type="button" class="chip ${preOn(n)?"on":""}" data-r="${n}">${t}</button>`).join("")}</div><div class="ynote">真题按考试年份；时政月度模拟题按所属年份。只筛常识判断，其他模块不受影响${none?`；设了范围时不含未标年份的 ${none} 题`:""}。</div>`;
- $("#pYa").onchange=()=>{pf.ya=$("#pYa").value;renderYears();updCount()};$("#pYb").onchange=()=>{pf.yb=$("#pYb").value;renderYears();updCount()};
- $$("#pYq .chip").forEach(c=>c.onclick=()=>{const n=c.dataset.r;if(!n){pf.ya="";pf.yb=""}else{pf.yb=String(mx);pf.ya=String(mx-(+n)+1)}renderYears();updCount()})}
+ if(none)pre.push(["none","未标注（"+none+"）"]);
+ const preOn=n=>n==="none"?!!pf.yu:n===""?(!pf.yu&&a===null&&b===null):(!pf.yu&&b===mx&&a===mx-n+1);
+ box.innerHTML=`<div class="muted">${esc(lab)} 年份范围（不选=全部年份）</div><div class="yr"><select id="pYa" aria-label="起始年份">${op(pf.ya,"最早")}</select><span>至</span><select id="pYb" aria-label="结束年份">${op(pf.yb,"最新")}</select></div><div class="chips" id="pYq">${pre.map(([n,t])=>`<button type="button" class="chip ${preOn(n)?"on":""}" data-r="${n}">${t}</button>`).join("")}</div><div class="ynote">真题按考试年份；时政月度模拟题按所属年份${none?`；设了范围时不含未标年份的 ${none} 题，可点「未标注」单独练习`:""}。</div>`;
+ $("#pYa").onchange=()=>{pf.yu=false;pf.ya=$("#pYa").value;renderYears();updCount()};$("#pYb").onchange=()=>{pf.yu=false;pf.yb=$("#pYb").value;renderYears();updCount()};
+ $$("#pYq .chip").forEach(c=>c.onclick=()=>{const n=c.dataset.r;if(n==="none"){pf.yu=true;pf.ya="";pf.yb=""}else if(!n){pf.yu=false;pf.ya="";pf.yb=""}else{pf.yu=false;pf.yb=String(mx);pf.ya=String(mx-(+n)+1)}renderYears();updCount()})}
 function pool(){readP();const ms=pMods();const f=Object.assign({},pf,{m:""});return bank.filter(x=>!x.exclude_practice&&ms.includes(x.module)&&match(x,f)&&yearOK(x))}
-function updCount(){$("#pcnt").textContent=`符合条件 ${pool().length} 题（跨全部试卷）`+(yLabel()?`；常识判断限 ${yLabel()}`:"")}
+function updCount(){$("#pcnt").textContent=`符合条件 ${pool().length} 题（跨全部试卷）`+(yLabel()?`；年份限 ${yLabel()}`:"")}
 $$("#pMods .chip").forEach(c=>c.onclick=()=>{c.classList.toggle("on");if(!pMods().length)c.classList.add("on");pf.qts=[];renderQts();updCount()});
 $("#pd").onchange=()=>{renderYears();updCount()};
 renderQts();updCount();
