@@ -160,7 +160,7 @@ const SEC_BY_MODULE={"常识判断":30,"言语理解与表达":55,"数量关系"
 function tmMode(){const m=ld(TM_KEY,"on");return m==="off"||m==="limit"?m:"on"}
 function limAlloc(){return ld(ALLOC_KEY,"byType")==="uniform"?"uniform":"byType"}
 function secPerQ(){const n=+ld(SPQ_KEY,55);return Math.max(5,(n|0)||55)}
-function secForQ(q){let sec=null;const qt=String(q.qtype||"");if(qt&&SEC_BY_QTYPE[qt]!=null)sec=SEC_BY_QTYPE[qt];if(sec==null){for(const k of Object.keys(SEC_BY_QTYPE)){if(qt&&qt.indexOf(k)>=0){sec=SEC_BY_QTYPE[k];break}}}if(sec==null)sec=SEC_BY_MODULE[q.module]||55;if(q.qsubtype==="多选")sec+=10;return sec}
+function secForQ(q){let sec=null;const qt=String(q.qtype||"");if(qt&&SEC_BY_QTYPE[qt]!=null)sec=SEC_BY_QTYPE[qt];if(sec==null){for(const k of Object.keys(SEC_BY_QTYPE)){if(qt&&qt.indexOf(k)>=0){sec=SEC_BY_QTYPE[k];break}}}if(sec==null)sec=SEC_BY_MODULE[q.module]||55;return sec}
 function limitMsForQs(qs){return qs.reduce((s,q)=>s+secForQ(q)*1000,0)}
 function limitDetail(qs){const m=new Map();qs.forEach(q=>{const sec=secForQ(q);let lab=q.qtype||q.module||"未分类";if(q.qsubtype==="多选")lab+="·多选";const k=lab+"|"+sec;const o=m.get(k)||{lab,sec,n:0};o.n++;m.set(k,o)});const parts=[...m.values()].map(o=>o.lab+" "+o.sec+" 秒×"+o.n);const ms=limitMsForQs(qs);return{ms,text:qs.length+" 题限时 "+fmtHum(ms)+(parts.length?"（"+parts.join("，")+"）":"")}}
 function fmtHum(ms){const s=Math.max(0,Math.ceil(ms/1000));const m=s/60|0,r=s%60;return m?(r?m+" 分 "+r+" 秒":m+" 分"):r+" 秒"}
@@ -318,7 +318,7 @@ function renderQts(){const mods=pMods();const checked=new Set(pf.qts||[]);
 function renderSub(){$("#pSubRow").innerHTML=subSelectHTML(pMods(),pf.qts,pf.qs);if($("#subSel"))$("#subSel").onchange=()=>{pf.qs=$("#subSel").value;renderYears();updCount()};renderYears()}
 function readP(){pf.t="";pf.e="";pf.d=$("#pd").value;pf.y1=null;pf.y2=null;pf.qs=($("#subSel")&&$("#subSel").value)||"";pf.qt="";pf.qts=$$("#pQts .chip.on").map(x=>x.dataset.qt);pf.m=""}
 // 年份范围：按当前已选模块/题型中实际存在的年份生成，作用于全部已选范围
-function yearBase(){readP();const ms=pMods();if(!ms.length)return[];const f=Object.assign({},pf,{m:""});return bank.filter(x=>!x.exclude_practice&&ms.includes(x.module)&&match(x,f))}
+function yearBase(){readP();const ms=pMods();if(!ms.length)return[];const f=Object.assign({},pf,{m:""});return bank.filter(x=>!x.exclude_practice&&!isTFMulti(x)&&ms.includes(x.module)&&match(x,f))}
 function yRange(){let a=pf.ya?+pf.ya:null,b=pf.yb?+pf.yb:null;if(a!==null&&b!==null&&a>b){const t=a;a=b;b=t}return[a,b]}
 function yearOK(x){if(pf.yu)return x.year==null;const [a,b]=yRange();if(a===null&&b===null)return true;if(x.year==null)return false;return(a===null||x.year>=a)&&(b===null||x.year<=b)}
 function yLabel(){if(pf.yu)return"未标注年份";const [a,b]=yRange();return a===null&&b===null?"":a!==null&&b!==null?(a===b?a+" 年":a+"–"+b+" 年"):a!==null?a+" 年及以后":b+" 年及以前"}
@@ -337,7 +337,8 @@ function renderYears(){const box=$("#pYearBox");const base=yearBase();if(!base.l
  box.innerHTML=`<div class="muted">${esc(lab)} 年份范围（不选=全部年份）</div><div class="yr"><select id="pYa" aria-label="起始年份">${op(pf.ya,"最早")}</select><span>至</span><select id="pYb" aria-label="结束年份">${op(pf.yb,"最新")}</select></div><div class="chips" id="pYq">${pre.map(([n,t])=>`<button type="button" class="chip ${preOn(n)?"on":""}" data-r="${n}">${t}</button>`).join("")}</div><div class="ynote">真题按考试年份；时政月度模拟题按所属年份${none?`；设了范围时不含未标年份的 ${none} 题，可点「未标注」单独练习`:""}。</div>`;
  $("#pYa").onchange=()=>{pf.yu=false;pf.ya=$("#pYa").value;renderYears();updCount()};$("#pYb").onchange=()=>{pf.yu=false;pf.yb=$("#pYb").value;renderYears();updCount()};
  $$("#pYq .chip").forEach(c=>c.onclick=()=>{const n=c.dataset.r;if(n==="none"){pf.yu=true;pf.ya="";pf.yb=""}else if(!n){pf.yu=false;pf.ya="";pf.yb=""}else{pf.yu=false;pf.yb=String(mx);pf.ya=String(mx-(+n)+1)}renderYears();updCount()})}
-function pool(){readP();const ms=pMods();const f=Object.assign({},pf,{m:""});return bank.filter(x=>!x.exclude_practice&&ms.includes(x.module)&&match(x,f)&&yearOK(x))}
+function isTFMulti(q){const s=q.qsubtype;return s==="多选"||s==="判断"}
+function pool(){readP();const ms=pMods();const f=Object.assign({},pf,{m:""});return bank.filter(x=>!x.exclude_practice&&!isTFMulti(x)&&ms.includes(x.module)&&match(x,f)&&yearOK(x))}
 function updCount(){$("#pcnt").textContent=`符合条件 ${pool().length} 题（跨全部试卷）`+(yLabel()?`；年份限 ${yLabel()}`:"");if(typeof updLimHint==="function")updLimHint()}
 $$("#pMods .chip").forEach(c=>c.onclick=()=>{c.classList.toggle("on");if(!pMods().length)c.classList.add("on");pf.qts=[];renderQts();updCount()});
 $("#pd").onchange=()=>{renderYears();updCount()};
@@ -528,7 +529,7 @@ material_id(资料分析共用材料 ID，可空), appearances(可选：同题�
 材料 CSV（单独文件）：material_id,text</div>
 <p>module 必须为：${MODS.join("、")}；answer 为 A/B/C/D；含逗号、引号或换行的字段用英文双引号包裹，内部引号写成 ""。year/difficulty/exam/qtype/material_id 可留空。导入带 material_id 的题目 CSV 时，请另外导入材料 CSV（表头 material_id,text）。</p>
 <button class="b r" id="rsd">恢复默认题库（内置 ${BASE.questions.length} 题）</button><button class="b r" id="rsb">恢复示例题库（覆盖当前题库）</button>
-<p class="muted">默认题库由 import_from_repo.py 从 xingce-prep 仓库导入：真题来自 真题/ocr/tiku.json（答案为机构整理/网友回忆，非官方），模拟题来自 练习/ 下的自编题。题库支持跨试卷按模块/题型/子类筛选；练习页可开「标注」手写笔记（关掉即清空）。题型部分来自仓库 subtype，其余按题干识别，可在编辑中修改。</p><h4>限时训练</h4><p class="muted">练习页可选「限时训练」：默认按题型累加秒数（如逻辑填空 45 秒、片段阅读 60 秒、数学运算 90 秒、资料分析 75 秒等；多选 +10 秒），也可改选「统一秒/题」。倒计时到 0 自动交卷；未作答不记错题。切到其他页会暂停计时，回来按已用有效时间续倒。</p></div>`;
+<p class="muted">默认题库由 import_from_repo.py 从 xingce-prep 仓库导入：真题来自 真题/ocr/tiku.json（答案为机构整理/网友回忆，非官方），模拟题来自 练习/ 下的自编题。题库支持跨试卷按模块/题型/子类筛选；练习页可开「标注」手写笔记（关掉即清空）。题型部分来自仓库 subtype，其余按题干识别，可在编辑中修改。</p><h4>限时训练</h4><p class="muted">练习页可选「限时训练」：默认按题型累加秒数（如逻辑填空 45 秒、片段阅读 60 秒、数学运算 90 秒、资料分析 75 秒等），也可改选「统一秒/题」。练习页默认抽题不含多选/判断（时政对错；不含「判断推理」模块）。倒计时到 0 自动交卷；未作答不记错题。切到其他页会暂停计时，回来按已用有效时间续倒。</p></div>`;
 $("#rsd").onclick=()=>{if(confirm("恢复为内置默认题库？你对题库的修改会丢失（错题本和统计保留）。")){setMode("base");go("bank")}};
 $("#rsb").onclick=()=>{if(confirm("将用 10 道示例题替换当前题库（之后可点“恢复默认题库”恢复）？")){setMode("custom",bundle(clone(SEED)));go("bank")}}}
 loadS();go("bank");if(S)toast("有未完成的刷题，点上方「▶ 继续刷题」回去");
